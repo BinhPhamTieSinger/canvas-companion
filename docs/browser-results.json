@@ -1,0 +1,80 @@
+{
+  "results": [
+    {
+      "name": "default read does not create a saved record",
+      "passed": true
+    },
+    {
+      "name": "uploaded image and canonical configuration commit together",
+      "passed": true
+    },
+    {
+      "name": "repeated upload reuses the same asset and scope record",
+      "passed": true
+    },
+    {
+      "name": "concurrent windows reject the stale edit instead of overwriting",
+      "passed": true
+    },
+    {
+      "name": "a reopened repository preserves the committed configuration",
+      "passed": true
+    },
+    {
+      "name": "backup contains one referenced image and passes restore checks",
+      "passed": true
+    },
+    {
+      "name": "corrupt backup leaves the committed configuration untouched",
+      "passed": true
+    },
+    {
+      "name": "remove drops the active image reference and retains reversible recovery",
+      "passed": true
+    },
+    {
+      "name": "undo restores the previous image without reuploading",
+      "passed": true
+    },
+    {
+      "name": "unreferenced assets are removed once they leave the recovery window",
+      "passed": true
+    },
+    {
+      "name": "real image load creates exactly one accessible-safe background layer",
+      "passed": true
+    },
+    {
+      "name": "rerender and visual changes reuse the layer without duplicate image nodes",
+      "passed": true
+    },
+    {
+      "name": "Canvas shell replacement remounts the image rather than leaving an empty layer",
+      "passed": true
+    },
+    {
+      "name": "shell backgrounds are suppressed only while this renderer owns them",
+      "passed": true
+    },
+    {
+      "name": "inherited unfiltered image and gradient overlay use one image owner",
+      "passed": true
+    },
+    {
+      "name": "switching the theme/filter updates the same inherited image layer",
+      "passed": true
+    },
+    {
+      "name": "removing the inherited theme image removes obsolete renderer ownership",
+      "passed": true
+    },
+    {
+      "name": "unavailable custom image shows fallback without changing the saved record",
+      "passed": true
+    },
+    {
+      "name": "late image completion cannot repaint after removing the background",
+      "passed": true
+    }
+  ]
+}

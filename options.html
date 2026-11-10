@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Canvas Companion · Background</title>
+  <link rel="stylesheet" href="src/ui/options.css">
+</head>
+<body>
+<main>
+  <header><span class="eyebrow">CANVAS COMPANION</span><h1>A background that stays yours.</h1><p>One saved choice for your VinUni Canvas dashboard.</p></header>
+  <p id="status" role="status" aria-live="polite">Loading your background…</p>
+  <form id="settings" hidden>
+    <fieldset><legend>Background</legend>
+      <label for="mode">Source</label>
+      <select id="mode"><option value="inherit">Use BetterCampus image · fix repetition</option><option value="custom">Choose my own image</option><option value="off">Leave BetterCampus unchanged</option></select>
+      <p class="hint">The compatibility mode moves a supported BetterCampus dashboard image into one layer. It never changes its saved theme.</p>
+      <div id="custom" hidden>
+        <label for="url">HTTPS image URL</label><input id="url" type="url" placeholder="https://example.com/background.jpg" autocomplete="off" spellcheck="false">
+        <p class="hint">A URL loads from its image host when Canvas opens. Upload a file to keep your image entirely local.</p>
+        <label for="upload">Or upload an image</label><input id="upload" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif">
+        <p id="asset-label" class="hint">PNG, JPEG, WebP, GIF, or AVIF · up to 8 MB</p>
+        <div class="two"><div><label for="fit">Image fit</label><select id="fit"><option value="cover">Cover</option><option value="contain">Contain</option></select></div><div><label for="fallback">Fallback color</label><input id="fallback" type="color"></div></div>
+        <div class="two"><div><label for="x">Horizontal position <output id="x-value"></output></label><input id="x" type="range" min="0" max="100"></div><div><label for="y">Vertical position <output id="y-value"></output></label><input id="y" type="range" min="0" max="100"></div></div>
+        <div class="two"><div><label for="scale">Scale <output id="scale-value"></output></label><input id="scale" type="range" min="100" max="200"></div><div><label for="brightness">Brightness <output id="brightness-value"></output></label><input id="brightness" type="range" min="0" max="200"></div></div>
+        <div class="two"><div><label for="blur">Blur <output id="blur-value"></output></label><input id="blur" type="range" min="0" max="30"></div><div><label for="opacity">Overlay <output id="opacity-value"></output></label><input id="opacity" type="range" min="0" max="100"></div></div>
+        <label for="overlay">Overlay color</label><input id="overlay" type="color">
+        <figure id="preview" aria-label="Unsaved background preview"><img id="preview-image" alt="" referrerpolicy="no-referrer"><div id="preview-overlay"></div><figcaption>Dashboard preview <span>Unsaved until you choose Save</span></figcaption></figure>
+      </div>
+    </fieldset>
+    <div class="actions"><button id="save" type="submit">Save background</button><button id="reload" type="button" class="secondary">Discard changes</button></div>
+    <div class="actions secondary-actions"><button id="remove" type="button" class="secondary">Remove companion background</button><button id="restore" type="button" class="secondary">Undo last save</button></div>
+    <details><summary>Backup & recovery</summary><p class="hint">Backups contain your companion settings and selected image. Keep them private. BetterCampus settings are separate.</p><button id="export" type="button" class="secondary">Export backup</button><label for="import">Restore from a companion backup</label><input id="import" type="file" accept="application/json,.json"></details>
+  </form>
+  <footer>Dashboard only · Themes and course cards stay with BetterCampus.<br>Timetable integration is still under investigation.</footer>
+</main>
+<script type="module" src="src/ui/options.js"></script>
+</body>
+</html>

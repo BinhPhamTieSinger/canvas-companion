@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Canvas Companion",
+  "version": "0.1.0",
+  "description": "Consistent dashboard backgrounds alongside BetterCampus. Local, reversible, and scoped to your Canvas.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://vinuni.instructure.com/*"],
+  "background": { "service_worker": "src/worker.js", "type": "module" },
+  "action": { "default_title": "Canvas Companion backgrounds", "default_popup": "options.html" },
+  "options_ui": { "page": "options.html", "open_in_tab": true },
+  "content_scripts": [{
+    "matches": ["https://vinuni.instructure.com/*"],
+    "js": ["src/content/boot.js"],
+    "run_at": "document_idle"
+  }],
+  "web_accessible_resources": [{
+    "resources": ["src/content/main.js", "src/background/model.js", "src/background/renderer.js"],
+    "matches": ["https://vinuni.instructure.com/*"]
+  }],
+  "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'none';" }
+}

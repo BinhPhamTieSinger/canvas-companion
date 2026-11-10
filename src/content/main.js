@@ -1,0 +1,60 @@
+import { BackgroundRenderer } from '../background/renderer.js';
+import { isDashboard } from '../background/model.js';
+
+const marker = '__canvasCompanionBackgroundV1';
+if (!globalThis[marker]) {
+  globalThis[marker] = true;
+  let snapshot, objectUrl, assetKey, busy = false, queued = false;
+  const renderer = new BackgroundRenderer(document, { onStatus(status) {
+    document.documentElement.dataset.canvasCompanionStatus = status.kind;
+  } });
+  function releaseAsset() { if (objectUrl) URL.revokeObjectURL(objectUrl); objectUrl = assetKey = null; }
+  async function refresh() {
+    if (busy) { queued = true; return; }
+    busy = true;
+    try {
+      if (!isDashboard(location)) { renderer.clear(); releaseAsset(); return; }
+      const reply = await chrome.runtime.sendMessage({ namespace: 'canvas-companion', action: 'read' });
+      if (!reply?.ok) throw new Error('Background settings are unavailable.');
+      snapshot = reply.data;
+      if (snapshot.asset?.id !== assetKey) {
+        releaseAsset();
+        if (snapshot.asset) {
+          const bytes = Uint8Array.from(atob(snapshot.asset.data), c => c.charCodeAt(0));
+          objectUrl = URL.createObjectURL(new Blob([bytes], { type: snapshot.asset.type }));
+          assetKey = snapshot.asset.id;
+        }
+      }
+      await renderer.render(snapshot.record, objectUrl);
+    } catch { renderer.clear(); document.documentElement.dataset.canvasCompanionStatus = 'error'; }
+    finally { busy = false; if (queued) { queued = false; void refresh(); } }
+  }
+  let scheduled;
+  const schedule = () => { clearTimeout(scheduled); scheduled = setTimeout(refresh, 120); };
+  const changed = (changes, area) => { if (area === 'local' && changes.backgroundRevision) schedule(); };
+  chrome.storage.onChanged.addListener(changed);
+  window.addEventListener('focus', schedule);
+  window.addEventListener('popstate', schedule);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) schedule(); });
+  // Observe theme sheet changes and shell replacement, not the entire academic DOM subtree.
+  const observer = new MutationObserver(records => {
+    if (records.some(record => {
+      const target = record.target.nodeType === 3 ? record.target.parentElement : record.target;
+      return target?.id !== 'canvas-companion-background-style' && !target?.closest?.('#canvas-companion-background-layer');
+    })) schedule();
+  });
+  observer.observe(document.head, { subtree: true, childList: true, characterData: true });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
+  observer.observe(document.body, { childList: true });
+  let path = location.pathname;
+  const navigationTimer = setInterval(() => {
+    if (path !== location.pathname) { path = location.pathname; schedule(); }
+    else if (isDashboard(location) && snapshot?.record.mode !== 'off' && renderer.layer && !renderer.layer.isConnected) schedule();
+  }, 1000);
+  window.addEventListener('pagehide', event => {
+    if (event.persisted) return;
+    observer.disconnect(); clearInterval(navigationTimer); clearTimeout(scheduled);
+    chrome.storage.onChanged.removeListener(changed); renderer.destroy(); releaseAsset();
+  }, { once: true });
+  void refresh();
+}
