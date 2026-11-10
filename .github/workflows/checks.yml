@@ -1,4 +1,4 @@
-name: Background checks
+name: Extension checks
 on:
   push:
   pull_request:

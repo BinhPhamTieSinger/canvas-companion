@@ -1,6 +1,6 @@
-# Planner interoperability gate and proposed next increment
+# Planner interoperability and approved ownership
 
-Date: 10 November 2026. Background installation/testing is complete for the cases documented in [live validation](LIVE-VALIDATION.md). No timetable code or new academic record store has been introduced.
+Date: 10 November 2026. Background installation/testing is complete for the cases documented in [live validation](LIVE-VALIDATION.md). The user subsequently explicitly approved: “Yes—make the companion the timetable owner.” The implemented 0.2.0 design is documented in [timetable architecture](TIMETABLE-ARCHITECTURE.md).
 
 ## Supported existing capabilities
 
@@ -24,7 +24,7 @@ This route **does not automatically synchronize BetterCampus-only manual schedul
 
 The proposed first timetable increment would include a collapsible dashboard section and daily/weekly views, canonical course/assignment references, manual recurring meetings and conflict warnings. Later increments would add one-time exams, projects/milestones, monthly and filtered calendars. No academic writes or external calendar updates would be enabled by default.
 
-This fallback requires user approval because it changes ownership relative to the originally preferred extension of BetterCampus's existing planner. Approval of background installation alone is not treated as approval of this data split.
+This fallback required user approval because it changes ownership relative to the originally preferred extension of BetterCampus's existing planner. Approval of background installation alone was not treated as approval of this data split. The separate ownership approval now authorizes the companion-owned manual timetable.
 
 ### Supported external-calendar projection
 

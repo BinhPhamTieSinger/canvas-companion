@@ -1,4 +1,6 @@
-# Verification report — background increment 0.1.0
+# Historical verification — background increment 0.1.0
+
+For the current 0.2.0 timetable and regression results, see [timetable validation](TIMETABLE-VALIDATION.md).
 
 Date: 10 November 2026. This report distinguishes automated/synthetic evidence from authenticated Canvas acceptance.
 
@@ -38,6 +40,6 @@ Open `http://127.0.0.1:4178/tests/browser/` for the renderer/storage suite. The 
 - Immediate delivery to hidden tabs independent of focus refresh, deliberately suspended-worker edge cases, quota exhaustion and large-upload performance. An open dashboard updated without a page reload and browser restart persistence passed.
 - Exhaustive original themes, fonts, cards, custom layouts, new/classic dashboard variants and productivity regressions.
 - Formal screen-reader and contrast audit; keyboard labels/focus and responsive CSS are implemented, not fully accessibility-certified.
-- All timetable, examination, assignment/project, reminder and calendar-sync requirements; these are not implemented yet.
+- At the time of 0.1.0, timetable features were unimplemented. They now have separate 0.2.0 evidence. Desktop reminders and external calendar synchronization remain future work.
 
 No credentials, session cookies, original settings exports, personal academic fixtures or university screenshots are committed.

@@ -1,14 +1,16 @@
 {
   "name": "canvas-companion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "A scoped Canvas companion with canonical backgrounds and reversible BetterCampus compatibility.",
+  "description": "A scoped Canvas companion with canonical backgrounds and an integrated academic timetable.",
   "scripts": {
     "test": "node --test tests/*.test.js",
     "check": "node scripts/check.mjs",
     "package": "node scripts/package.mjs",
     "serve:test": "node scripts/serve.mjs"
   },
-  "engines": { "node": ">=22" }
+  "engines": {
+    "node": ">=22"
+  }
 }

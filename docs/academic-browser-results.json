@@ -1,0 +1,60 @@
+{
+  "results": [
+    {
+      "name": "additive v1-to-v2 upgrade preserves background configuration and exact asset bytes",
+      "passed": true
+    },
+    {
+      "name": "recurring class create/edit remains one canonical record",
+      "passed": true
+    },
+    {
+      "name": "concurrent stale edits reject without erasing a newer value",
+      "passed": true
+    },
+    {
+      "name": "academic records are partitioned by Canvas account",
+      "passed": true
+    },
+    {
+      "name": "delete and undo preserve the recurring series identity",
+      "passed": true
+    },
+    {
+      "name": "repeated Canvas sync stores one canonical assignment and applies moved deadlines",
+      "passed": true
+    },
+    {
+      "name": "personal completion references Canvas rather than copying assignment fields",
+      "passed": true
+    },
+    {
+      "name": "manual assignment cannot duplicate an already imported Canvas source",
+      "passed": true
+    },
+    {
+      "name": "one-time examination and project milestones persist independently of classes",
+      "passed": true
+    },
+    {
+      "name": "backup import is idempotent, account-bound and preserves newer records",
+      "passed": true
+    },
+    {
+      "name": "invalid source snapshot cannot replace last successful Canvas data",
+      "passed": true
+    },
+    {
+      "name": "academic edits and backup restores never rewrite the saved background",
+      "passed": true
+    },
+    {
+      "name": "backup recovers preferences only for an unused account scope",
+      "passed": true
+    },
+    {
+      "name": "backup cannot bypass the Canvas assignment deduplication rule",
+      "passed": true
+    }
+  ]
+}

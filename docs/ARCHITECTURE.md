@@ -1,12 +1,12 @@
-# Background increment architecture
+# Background architecture (retained in 0.2.0)
 
 ## Ownership and scope
 
-`src/background/model.js` defines the supported university origin, one `origin|dashboard` scope, validated sources and bounded visual controls. This scope belongs to the browser profile; there is no academic account identity or assignment storage in this increment.
+`src/background/model.js` defines the supported university origin, one `origin|dashboard` scope, validated sources and bounded visual controls. This scope belongs to the browser profile; academic account partitioning is separate and described in [timetable architecture](TIMETABLE-ARCHITECTURE.md).
 
 `src/background/repository.js` is the only authoritative configuration repository. It runs in the extension service worker through `src/worker.js`. Content scripts and the settings interface send validated runtime commands; they do not maintain independent saved configurations.
 
-The version-1 IndexedDB schema has three stores:
+The original version-1 background stores remain unchanged within the additive version-2 schema:
 
 | Store | Key | Purpose |
 | --- | --- | --- |
@@ -16,11 +16,11 @@ The version-1 IndexedDB schema has three stores:
 
 The previous configuration references the existing asset; it does not copy image bytes. Each mutation keeps only assets referenced by the active record or bounded recovery snapshot. When the recovery window advances, obsolete assets are collected transactionally. Export includes only the active image, not the recovery snapshot.
 
-No record is created during initialization. Missing settings resolve to compatibility mode in memory. There is no legacy companion schema to migrate yet. Versioned backup validation provides the first controlled import route; it does not import private BetterCampus data.
+No record is created during initialization. Missing settings resolve to compatibility mode in memory. The additive version-2 upgrade preserves these existing records and image bytes. Versioned backup validation provides the first controlled import route; it does not import private BetterCampus data.
 
 ## Commands and consistency
 
-Mutating commands originate only from the companion settings page. Other authorized Canvas pages can request the background snapshot. The worker validates extension identity and sender URL. There is no external-message listener or page-level RPC bridge.
+Background-mutating commands originate only from the companion settings page. Other authorized Canvas pages can request the background snapshot. The worker validates extension identity and sender URL. There is no external-message listener or page-level RPC bridge.
 
 A readwrite transaction checks the expected revision, writes any new asset, stores the previous configuration, commits the new configuration and reclaims obsolete assets. Stale edits fail with an instruction to reload. A Chrome local-storage revision entry wakes open views after commit; it is a notification, not a second configuration store. Initialization, focus and visibility changes also re-read the authoritative state.
 
@@ -45,5 +45,5 @@ Custom images have a fallback on decode/load failure. The saved configuration re
 - Dashboard only; course-card images, Canvas pages, original settings and user layouts remain owned by their existing systems.
 - Companion configuration is local and is not synchronized across devices. Backups are explicit.
 - Current scope is profile/university, not separate user-account/theme scopes. Add those only through a versioned schema extension if required.
-- No private BetterCampus storage or hosted APIs, credential access, assignment submission, grade changes, messaging, calendar writes or notifications.
-- No timetable database until a supported way to reference existing planner entities is established or a narrower fallback is separately approved.
+- No private BetterCampus storage or hosted APIs, credential access, assignment submission, grade changes, messaging, calendar writes or notifications. Authorized Canvas reads are confined to the new academic adapter.
+- Companion manual timetable ownership was separately approved; see [planner decision](PLANNER-INTEGRATION.md) and [timetable architecture](TIMETABLE-ARCHITECTURE.md).

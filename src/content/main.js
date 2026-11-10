@@ -1,9 +1,12 @@
 import { BackgroundRenderer } from '../background/renderer.js';
+import { AcademicController } from '../academic/widget.js';
 import { isDashboard } from '../background/model.js';
 
 const marker = '__canvasCompanionBackgroundV1';
 if (!globalThis[marker]) {
   globalThis[marker] = true;
+  const academic = new AcademicController(document);
+  void academic.route();
   let snapshot, objectUrl, assetKey, busy = false, queued = false;
   const renderer = new BackgroundRenderer(document, { onStatus(status) {
     document.documentElement.dataset.canvasCompanionStatus = status.kind;
@@ -33,9 +36,9 @@ if (!globalThis[marker]) {
   const schedule = () => { clearTimeout(scheduled); scheduled = setTimeout(refresh, 120); };
   const changed = (changes, area) => { if (area === 'local' && changes.backgroundRevision) schedule(); };
   chrome.storage.onChanged.addListener(changed);
-  window.addEventListener('focus', schedule);
+  window.addEventListener('focus', () => { schedule(); void academic.focus(); });
   window.addEventListener('popstate', schedule);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) schedule(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { schedule(); void academic.focus(); } });
   // Observe theme sheet changes and shell replacement, not the entire academic DOM subtree.
   const observer = new MutationObserver(records => {
     if (records.some(record => {
@@ -48,13 +51,15 @@ if (!globalThis[marker]) {
   observer.observe(document.body, { childList: true });
   let path = location.pathname;
   const navigationTimer = setInterval(() => {
+    if (!chrome.runtime?.id) { observer.disconnect(); clearInterval(navigationTimer); clearTimeout(scheduled); renderer.destroy(); academic.destroy(); releaseAsset(); return; }
+    void academic.route();
     if (path !== location.pathname) { path = location.pathname; schedule(); }
     else if (isDashboard(location) && snapshot?.record.mode !== 'off' && renderer.layer && !renderer.layer.isConnected) schedule();
   }, 1000);
   window.addEventListener('pagehide', event => {
     if (event.persisted) return;
     observer.disconnect(); clearInterval(navigationTimer); clearTimeout(scheduled);
-    chrome.storage.onChanged.removeListener(changed); renderer.destroy(); releaseAsset();
+    chrome.storage?.onChanged?.removeListener(changed); renderer.destroy(); academic.destroy(); releaseAsset();
   }, { once: true });
   void refresh();
 }

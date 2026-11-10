@@ -1,6 +1,9 @@
 import { BackgroundRepository } from './background/repository.js';
 import { ORIGIN, SCOPE, MAX_IMAGE_BYTES, MIME_TYPES } from './background/model.js';
 
+import { AcademicRepository } from './academic/repository.js';
+const academic = new AcademicRepository();
+
 const repository = new BackgroundRepository();
 async function encode(blob) {
   const bytes = new Uint8Array(await blob.arrayBuffer());
@@ -30,6 +33,26 @@ async function handle(message, sender) {
   let canvasPage = false;
   try { canvasPage = new URL(sender.url).origin === ORIGIN; } catch { /* no page URL */ }
   if (!settingsPage && !canvasPage) throw new Error('Unsupported page.');
+  if (message.action?.startsWith('academic.')) {
+    const scope = message.scope;
+    let data;
+    switch (message.action) {
+      case 'academic.read': return academic.read(scope);
+      case 'academic.export': return academic.export(scope);
+      case 'academic.save':
+        if(message.record?.scope !== scope) throw new Error('Academic account mismatch.');
+        data = await academic.save(message.record, message.revision); break;
+      case 'academic.remove': data = await academic.remove(scope,message.kind,message.id,message.revision); break;
+      case 'academic.undo': data = await academic.undo(scope,message.revision); break;
+      case 'academic.preferences': data = await academic.setPreferences(scope,message.preferences,message.revision); break;
+      case 'academic.sync': data = await academic.sync(scope,message.snapshot); break;
+      case 'academic.import': data = await academic.import(scope,message.backup,message.revision); break;
+      default: throw new Error('Unsupported academic command.');
+    }
+    try { await chrome.storage.local.set({academicRevision:{scope,revision:data.revision,at:Date.now()}}); }
+    catch { data.warning='Saved locally. Reload other dashboard tabs if they do not update.'; }
+    return data;
+  }
   if (message.action === 'read') return snapshot();
   if (!settingsPage) throw new Error('Open Canvas Companion settings to make changes.');
   if (message.action === 'export') return repository.export();

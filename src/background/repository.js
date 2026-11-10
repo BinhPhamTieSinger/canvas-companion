@@ -1,32 +1,15 @@
 import { configuration, defaultRecord, SCOPE, assetId, ConflictError, MAX_IMAGE_BYTES, MIME_TYPES } from './model.js';
 
-const request = req => new Promise((resolve, reject) => {
-  req.onsuccess = () => resolve(req.result);
-  req.onerror = () => reject(req.error);
-});
-const complete = tx => new Promise((resolve, reject) => {
-  tx.oncomplete = resolve;
-  tx.onabort = tx.onerror = () => reject(tx.error || new Error('The background update could not be saved.'));
-});
+import { openDatabase, request, completed as complete } from '../storage/database.js';
+
 export class BackgroundRepository {
   constructor(name = 'canvas-companion') { this.name = name; this.database = null; }
   async open() {
     if (this.database) return this.database;
-    this.database = new Promise((resolve, reject) => {
-      const req = indexedDB.open(this.name, 1);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        db.createObjectStore('backgrounds', { keyPath: 'scope' });
-        db.createObjectStore('assets', { keyPath: 'id' });
-        db.createObjectStore('recovery', { keyPath: 'scope' });
-      };
-      req.onsuccess = () => {
-        req.result.onversionchange = () => { req.result.close(); this.database = null; };
-        resolve(req.result);
-      };
-      req.onerror = () => { this.database = null; reject(req.error); };
-      req.onblocked = () => { this.database = null; reject(new Error('Close older Canvas Companion settings windows, then try again.')); };
-    });
+    this.database = openDatabase(this.name).then(db => {
+      db.onversionchange = () => { db.close(); this.database = null; };
+      return db;
+    }).catch(error => { this.database = null; throw error; });
     return this.database;
   }
   async read() {
