@@ -7,10 +7,13 @@
 </head>
 <body>
 <main>
-  <header><span class="eyebrow">CANVAS COMPANION</span><h1>A background that stays yours.</h1><p>One saved choice for your VinUni Canvas dashboard.</p></header>
+  <header><span class="eyebrow">CANVAS COMPANION</span><h1>A background that stays yours.</h1><p>One saved image across your VinUni Canvas experience.</p></header>
   <p id="status" role="status" aria-live="polite">Loading your background…</p>
   <form id="settings" hidden>
     <fieldset><legend>Background</legend>
+      <label for="pages">Apply background to</label><select id="pages"><option value="dashboard">Dashboard only</option><option value="all">All Canvas pages</option></select>
+      <label for="surface">Canvas surfaces</label><select id="surface"><option value="original">Keep current theme</option><option value="transparent">Transparent · light text and colorful accents</option></select>
+      <p class="hint">Transparent mode uses your existing image and overlay. Embedded documents and rich text editors keep their own readable surfaces.</p>
       <label for="mode">Source</label>
       <select id="mode"><option value="inherit">Use BetterCampus image · fix repetition</option><option value="custom">Choose my own image</option><option value="off">Leave BetterCampus unchanged</option></select>
       <p class="hint">The compatibility mode moves a supported BetterCampus dashboard image into one layer. It never changes its saved theme.</p>
@@ -31,7 +34,7 @@
     <div class="actions secondary-actions"><button id="remove" type="button" class="secondary">Remove companion background</button><button id="restore" type="button" class="secondary">Undo last save</button></div>
     <details><summary>Backup & recovery</summary><p class="hint">Backups contain your companion settings and selected image. Keep them private. BetterCampus settings are separate.</p><button id="export" type="button" class="secondary">Export backup</button><label for="import">Restore from a companion backup</label><input id="import" type="file" accept="application/json,.json"></details>
   </form>
-  <footer>Dashboard only · Themes and course cards stay with BetterCampus.<br>Your academic timetable is on the Canvas dashboard.</footer>
+  <footer>One background configuration · Original BetterCampus settings are preserved.<br>Your academic timetable is on the Canvas dashboard.</footer>
 </main>
 <script type="module" src="src/ui/options.js"></script>
 </body>

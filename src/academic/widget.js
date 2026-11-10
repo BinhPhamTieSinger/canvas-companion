@@ -6,7 +6,7 @@ import { dateIn,timeIn,addDays,windowFor,labelDate,minuteOfDay } from './time.js
 import { el,button } from './dom.js';
 import { openEditor } from './forms.js';
 import { styles } from './styles.js';
-const TITLES={class:'Class',exam:'Examination',assignment:'Assignment',project:'Project',milestone:'Milestone',canvas_event:'Canvas event'};
+const TITLES={class:'Class',exam:'Examination',assignment:'Assignment',project:'Project',milestone:'Milestone',canvas_event:'Canvas event',event:'Event',office_hours:'Office hours'};
 const STATUS={today:'Due today',soon:'Due soon',overdue:'Overdue',upcoming:'Upcoming',completed:'Completed',undated:'No deadline'};
 const VIEWS=[['day','Day'],['week','Week'],['month','Month'],['exams','Exams'],['deadlines','Deadlines'],['overview','Overview']];
 export class AcademicController {
@@ -179,7 +179,7 @@ export class AcademicWidget {
     const top=el('div',{class:'top'},el('div',{},el('p',{class:'eyebrow'},'CANVAS COMPANION'),el('h2',{},'Academic timetable')));
     if(!this.state){top.append(button('Retry connection',()=>this.controller.connect()));this.panel.replaceChildren(top,el('p',{class:`status ${this.error?'error':''}`,role:'status'},this.notice||'Connecting to Canvas…'));return;}
     const state=this.state,p=state.preferences,range=windowFor(this.view,this.date),now=this.controller.clock();
-    const addKind=el('select',{'aria-label':'Record type'},...['class','exam','assignment','project','course'].map(kind=>el('option',{value:kind},kind==='course'?'Manual course':TITLES[kind])));
+    const addKind=el('select',{'aria-label':'Record type'},...['class','exam','assignment','project','event','office_hours','course'].map(kind=>el('option',{value:kind},kind==='course'?'Manual course':TITLES[kind])));
     top.append(el('div',{class:'top-actions'},addKind,button('Add',()=>this.edit(addKind.value),'primary',{disabled:this.busy}),button('Refresh Canvas',()=>this.sync(),'secondary',{disabled:this.busy}),button(this.collapsed?'Expand':'Collapse',()=>this.savePreferences({collapsed:!this.collapsed}),'icon',{'aria-expanded':!this.collapsed})));
     if(this.collapsed){this.panel.replaceChildren(top);return;}
     const toolbar=el('div',{class:'toolbar'},el('nav',{class:'views','aria-label':'Timetable views'},...VIEWS.map(([id,label])=>button(label,()=>this.savePreferences({view:id}),'secondary',{'aria-pressed':this.view===id}))),el('div',{class:'nav'},button('‹',()=>this.navigate(-1),'secondary',{'aria-label':'Previous period'}),el('span',{class:'period'},`${labelDate(range.from)}${range.from===range.to?'':' – '+labelDate(range.to)}`),button('Today',()=>{this.date=dateIn(now,p.timezone);this.render();}),button('›',()=>this.navigate(1),'secondary',{'aria-label':'Next period'})));

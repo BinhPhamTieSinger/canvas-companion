@@ -1,7 +1,7 @@
 import { ORIGIN } from '../background/model.js';
 import { validZone, validDate, validTime, zonedInstant, dateIn } from './time.js';
 export const DEFAULT_PREFS = Object.freeze({ timezone:'Asia/Ho_Chi_Minh', travelMinutes:15, dueSoonHours:72, clusterDays:3, clusterCount:3, view:'week', showCompleted:false, collapsed:false, courseFilter:'' });
-export const KINDS = new Set(['class','exam','assignment','project','annotation','course']);
+export const KINDS = new Set(['class','exam','assignment','project','annotation','course','event','office_hours']);
 export const PRIORITIES = ['low','normal','high'];
 export const PREPARATION = ['not_started','preparing','ready'];
 export const SUBMISSION = ['not_submitted','submitted','returned'];
@@ -41,16 +41,16 @@ export function validateRecord(input) {
       if(!validTime(m.start)||!validTime(m.end)) throw new Error('Each meeting needs valid start and end times.');
       const day=integer(m.day,1,7),overnight=Boolean(m.overnight);
       if((!overnight&&m.end<=m.start)||(overnight&&m.end>m.start)) throw new Error('Class end must follow start; mark an overnight meeting explicitly.');
-      return {id:id(m.id),day,start:m.start,end:m.end,overnight,room:text(m.room??'',120),building:text(m.building??'',120),campus:text(m.campus??'',160)};
+      return {id:id(m.id),activeDates:(m.activeDates??[]).map(v=>date(v,'Meeting date')),skippedDates:(m.skippedDates??[]).map(v=>date(v,'Skipped meeting date')),sessionType:choice(m.sessionType,['lecture','lab','tutorial','seminar','other'],'lecture'),day,start:m.start,end:m.end,overnight,room:text(m.room??'',120),building:text(m.building??'',120),campus:text(m.campus??'',160)};
     });
     if(new Set(meetings.map(m=>m.id)).size!==meetings.length) throw new Error('Meeting identities must be unique.');
     const skipped=(d.skippedDates??[]).map(value=>date(value,'Skipped class date'));
     return {...base,data:{...common,startDate,endDate,timezone:d.timezone,intervalWeeks:integer(d.intervalWeeks,1,8,1),instructor:text(d.instructor??'',200),meetings,skippedDates:[...new Set(skipped)]}};
   }
-  if(input.kind==='exam') {
-    const startAt=instant(d.startAt,'Exam start'),endAt=instant(d.endAt,'Exam end');
-    if(endAt<=startAt||Date.parse(endAt)-Date.parse(startAt)>86400000) throw new Error('Exam duration must be positive and no more than 24 hours.');
-    return {...base,data:{...common,startAt,endAt,type:required(d.type,'Examination type',80),room:text(d.room??'',120),building:text(d.building??'',120),campus:text(d.campus??'',160),instructions:text(d.instructions??''),preparation:choice(d.preparation,PREPARATION,'not_started')}};
+  if(['exam','event','office_hours'].includes(input.kind)) {
+    const startAt=instant(d.startAt,'Exam start'),endAt=instant(d.endAt,'Event end',input.kind!=='exam');
+    if(endAt&&(endAt<=startAt||Date.parse(endAt)-Date.parse(startAt)>86400000)) throw new Error('Exam duration must be positive and no more than 24 hours.');
+    return {...base,data:{...common,startAt,endAt,type:input.kind==='exam'?required(d.type,'Examination type',80):input.kind,room:text(d.room??'',120),building:text(d.building??'',120),campus:text(d.campus??'',160),instructions:text(d.instructions??''),preparation:choice(d.preparation,PREPARATION,'not_started')}};
   }
   if(input.kind==='assignment') return {...base,data:{...common,description:text(d.description??''),dueAt:instant(d.dueAt,'Deadline',true),priority:choice(d.priority,PRIORITIES,'normal'),estimatedMinutes:integer(d.estimatedMinutes,0,10000,0),completed:Boolean(d.completed),submissionStatus:choice(d.submissionStatus,SUBMISSION,'not_submitted'),url:safeLink(d.url)}};
   const startDate=date(d.startDate,'Project start',true),dueAt=instant(d.dueAt,'Project deadline',true),timezone=d.timezone||'Asia/Ho_Chi_Minh';

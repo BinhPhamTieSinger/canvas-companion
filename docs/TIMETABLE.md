@@ -1,4 +1,4 @@
-# Academic timetable — 0.2.0
+# Academic timetable — 0.3.0
 
 The user approved companion ownership of manual academic records after reviewing [planner interoperability](PLANNER-INTEGRATION.md). The timetable is one collapsible dashboard section; native Canvas content remains below it. It is not a replacement for the vendor's private planner implementation.
 
@@ -15,7 +15,7 @@ The user approved companion ownership of manual academic records after reviewing
 
 | Type | Supported fields and behavior |
 | --- | --- |
-| Recurring class | Name/code, course, color, timezone, term dates, every N weeks, weekday-specific times, explicit overnight option, rooms/buildings/campuses per meeting, instructor, skip dates, notes. Editing updates the series. |
+| Recurring class | Name/code, course, color, timezone, term dates, every N weeks, weekday-specific times, lecture/lab/tutorial distinctions, selected teaching dates and cancellations per meeting, explicit overnight option, rooms/buildings/campuses per meeting, instructor, skip dates, notes. Editing updates the series. |
 | Examination | Name, course, type, date/start/end, derived duration, room/building/campus, instructions, preparation status, notes, derived countdown. One-time record independent of classes. |
 | Assignment | Manual title/course/description, deadline or explicitly undated, priority, estimated minutes, personal submission status, completion, source link and notes. Imported Canvas assignments retain Canvas source identity; annotations hold only personal fields. |
 | Project | Title/course/description, start/final deadline, priority, members, resources, notes, personal submission status, milestones with optional deadlines, smaller tasks. Progress is derived from completed milestones/tasks. |
@@ -36,3 +36,7 @@ Warnings report overlaps, multiple exams on a day, short gaps between consecutiv
 - No desktop reminders, external-calendar sync or provider connections in this release. Countdown and deadline warnings update while the dashboard is open. No background notification service is claimed.
 
 Data stays in the current Chrome profile. Cross-device sync is not implemented. Export before uninstalling, clearing extension storage or changing profiles.
+
+## Additional 0.3.0 behavior
+
+Office hours and general events can be added independently, including a known start with an unknown end. Appointment-only and TBA information stays in notes until confirmed. The all-page Timetable shortcut links to this same dashboard section. Transparent appearance uses dedicated companion surface tokens while retaining the existing saved image/overlay. See [appearance verification](TRANSPARENT-APPEARANCE.md).

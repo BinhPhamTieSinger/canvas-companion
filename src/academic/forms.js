@@ -7,7 +7,7 @@ const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunda
 export function openEditor(root,{record,kind=record?.kind,state,event,onSave,onDelete}) {
   const data=record?.data||{},zone=state.preferences.timezone;
   const dialog=el('dialog',{class:'editor'}),form=el('form'),error=el('p',{class:'error',role:'alert'}),fields={};
-  const title=kind==='preferences'?'Timetable preferences':`${record?'Edit':'Add'} ${kind==='annotation'?'personal assignment details':kind}`;
+  const title=kind==='preferences'?'Timetable preferences':`${record?'Edit':'Add'} ${kind==='annotation'?'personal assignment details':({office_hours:'office hours',exam:'examination',event:'event'}[kind]||kind)}`;
   const heading=el('h2',{},title);heading.id=`editor-${crypto.randomUUID()}`;dialog.setAttribute('aria-labelledby',heading.id);
   form.append(el('div',{class:'dialog-heading'},heading,button('Close',()=>dialog.close(),'icon',{'aria-label':'Close editor'})));
   if(kind==='annotation')form.append(el('p',{class:'hint'},event?.title||'Canvas assignment'),el('p',{class:'hint'},'Personal details stay in the companion. The checkbox does not submit coursework or change Canvas status.'));
@@ -57,23 +57,25 @@ export function openEditor(root,{record,kind=record?.kind,state,event,onSave,onD
           input.id=`m-${crypto.randomUUID()}`;if(type==='select')input.value=value;
           row[key]=input;box.append(el('label',{htmlFor:input.id},label),input);
         };
+        item('sessionType','Session type','select',meeting.sessionType||'lecture');row.sessionType.replaceChildren(...[['lecture','Lecture'],['lab','Lab'],['tutorial','Tutorial'],['seminar','Seminar'],['other','Other']].map(([value,label])=>el('option',{value},label)));row.sessionType.value=meeting.sessionType||'lecture';
         item('day','Day','select',String(meeting.day||''),{required:true});item('start','Start','time',meeting.start||'',{required:true});item('end','End','time',meeting.end||'',{required:true});
         item('overnight','Ends on the following day','checkbox','');row.overnight.checked=Boolean(meeting.overnight);
         for(const [key,label] of [['room','Classroom'],['building','Building'],['campus','Campus / location']])item(key,label,'text',meeting[key]||'');
+        item('activeDates','Only these dates (optional, comma-separated YYYY-MM-DD)','text',(meeting.activeDates||[]).join(', '));item('skippedDates','Skip meeting dates (comma-separated YYYY-MM-DD)','text',(meeting.skippedDates||[]).join(', '));
         box.append(button('Remove meeting',()=>{rows.splice(rows.indexOf(row),1);box.remove();},'text-button'));rows.push(row);meetings.append(box);
       };
       for(const meeting of data.meetings||[{}])addMeeting(meeting);
       form.append(button('Add another weekday / time',()=>addMeeting()));
       field('skippedDates','Skip dates (comma-separated YYYY-MM-DD)','text',(data.skippedDates||[]).join(', '));
-      fields.meetings=()=>rows.map(row=>({id:row.id,day:Number(row.day.value),start:row.start.value,end:row.end.value,overnight:row.overnight.checked,room:row.room.value,building:row.building.value,campus:row.campus.value}));
+      fields.meetings=()=>rows.map(row=>({id:row.id,activeDates:row.activeDates.value.split(',').map(v=>v.trim()).filter(Boolean),skippedDates:row.skippedDates.value.split(',').map(v=>v.trim()).filter(Boolean),sessionType:row.sessionType.value,day:Number(row.day.value),start:row.start.value,end:row.end.value,overnight:row.overnight.checked,room:row.room.value,building:row.building.value,campus:row.campus.value}));
       form.append(el('p',{class:'hint'},'Editing a class updates its recurring series. Skip dates cancel individual meetings.'));
-    } else if(kind==='exam') {
-      field('type','Examination type','text',data.type||'',{required:true,placeholder:'Midterm, final, quiz, practical…'});
-      fields.startAt=dateTime('startAt','Examination start',data.startAt);fields.endAt=dateTime('endAt','Examination end',data.endAt);
-      for(const [key,label] of [['room','Examination room'],['building','Building'],['campus','Campus / location']])field(key,label,'text',data[key]||'');
+    } else if(['exam','event','office_hours'].includes(kind)) {
+      if(kind==='exam')field('type','Examination type','text',data.type||'',{required:true,placeholder:'Midterm, final, quiz, practical…'});
+      fields.startAt=dateTime('startAt',kind==='exam'?'Examination start':'Event start',data.startAt);fields.endAt=dateTime('endAt',kind==='exam'?'Examination end':'Event end',data.endAt);
+      for(const [key,label] of [['room','Room'],['building','Building'],['campus','Campus / location']])field(key,label,'text',data[key]||'');
       field('instructions','Special instructions','textarea',data.instructions||'');
-      select('preparation','Preparation status',[['not_started','Not started'],['preparing','Preparing'],['ready','Ready']],data.preparation||'not_started');
-      form.append(el('p',{class:'hint'},'Duration and countdown are calculated from the examination times.'));
+      if(kind==='exam')select('preparation','Preparation status',[['not_started','Not started'],['preparing','Preparing'],['ready','Ready']],data.preparation||'not_started');
+      form.append(el('p',{class:'hint'},kind==='exam'?'Duration and countdown are calculated from the examination times.':'Leave the end date and time blank when the source does not specify them.'));
     } else if(kind==='assignment'||kind==='project') {
       field('description','Description','textarea',data.description||'');
       fields.dueAt=dateTime('dueAt',kind==='project'?'Final deadline':'Deadline',data.dueAt);

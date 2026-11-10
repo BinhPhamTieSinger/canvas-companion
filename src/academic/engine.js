@@ -23,12 +23,12 @@ export function projectEvents(state,from,to) {
       if(d.endDate<addDays(from,-2)||d.startDate>addDays(to,2))continue;
       for(let date=addDays(from,-2);date<=addDays(to,2);date=addDays(date,1)) {
         if(date<d.startDate||date>d.endDate||d.skippedDates.includes(date)||Math.floor(daysBetween(monday(d.startDate),monday(date))/7)%d.intervalWeeks!==0) continue;
-        for(const meeting of d.meetings.filter(m=>m.day===weekday(date))) {
-          try {add({...base,...meeting,id:`${record.id}@${date}@${meeting.id}`,seriesId:record.id,startAt:zonedInstant(date,meeting.start,d.timezone),endAt:zonedInstant(meeting.overnight?addDays(date,1):date,meeting.end,d.timezone),date});}
+        for(const meeting of d.meetings.filter(m=>m.day===weekday(date)&&(!m.activeDates?.length||m.activeDates.includes(date))&&!m.skippedDates?.includes(date))) {
+          try {add({...base,...meeting,id:`${record.id}@${date}@${meeting.id}`,seriesId:record.id,title:`${d.title}${meeting.sessionType&&meeting.sessionType!=='lecture'?' · '+meeting.sessionType:''}`,startAt:zonedInstant(date,meeting.start,d.timezone),endAt:zonedInstant(meeting.overnight?addDays(date,1):date,meeting.end,d.timezone),date});}
           catch {add({...base,id:`${record.id}@${date}@${meeting.id}`,date,invalidTime:true});}
         }
       }
-    } else if(record.kind==='exam'||record.kind==='assignment') add(base);
+    } else if(['exam','assignment','event','office_hours'].includes(record.kind)) add(base);
     else if(record.kind==='project') {
       add({...base,progress:projectProgress(d),completed:d.submissionStatus==='submitted'});
       for(const milestone of d.milestones) add({...base,...milestone,id:`${record.id}:milestone:${milestone.id}`,kind:'milestone',projectTitle:d.title,record,priority:d.priority});

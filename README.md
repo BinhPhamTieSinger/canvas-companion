@@ -2,11 +2,11 @@
 
 A dependency-free Manifest V3 companion integrated into the VinUni Canvas dashboard. It preserves BetterCampus ownership of themes/course cards and adds canonical backgrounds and an academic timetable. This is an independent project, not an official or modified BetterCampus release.
 
-## Academic timetable — 0.2.0
+## Academic timetable — 0.3.0
 
 The approved ownership model uses one local record per manual class, examination, assignment or project. Six views project those records alongside read-only Canvas source references:
 
-- Recurring classes with weekday-specific times, term bounds, alternate weeks, rooms, locations, instructors and skipped dates.
+- Recurring classes with weekday-specific times, lecture/lab/tutorial types, per-meeting selected dates/cancellations, term bounds, alternate weeks, rooms, locations, instructors and skipped dates.
 - One-time examinations with preparation status, instructions, duration and countdowns.
 - Canvas assignment references and personal deadlines, with priority, effort and separate personal completion/submission status.
 - Projects with milestones, smaller tasks, resources, group members and derived progress.
@@ -18,7 +18,10 @@ See [how to use the timetable](docs/TIMETABLE.md), [data architecture](docs/TIME
 
 ![Timetable with synthetic academic records](docs/timetable-overview.jpg)
 
-## Backgrounds
+## Transparent appearance and backgrounds
+
+Choose **All Canvas pages** and **Transparent · light text and colorful accents** in background settings for an editor-inspired transparent workspace. Your existing image and overlay remain unchanged. Embedded documents/editors retain their own surfaces. The floating **Timetable** link opens the dashboard timetable from any Canvas page. Existing installations keep their original appearance until these options are explicitly saved. See [appearance validation](docs/TRANSPARENT-APPEARANCE.md).
+
 
 Custom HTTPS image URLs or local uploads support cover/contain, positioning, scale, brightness, blur, overlay, fallback color and preview. One canonical dashboard configuration references SHA-256-addressed image bytes. Transactional saves reject stale settings, support undo and checksum-validated backup recovery. Compatibility mode consolidates a supported rendered BetterCampus background into one reversible image layer without changing its saved theme.
 
@@ -35,7 +38,7 @@ npm run package
 npm run serve:test
 ```
 
-A fresh package is generated at `dist/canvas-companion-0.2.0`. When updating an existing unpacked installation, preserve its original folder path and extension identity. Do not uninstall or load a different path as an update. Keep Developer mode enabled for this unpacked installation.
+A fresh package is generated at `dist/canvas-companion-0.3.0`. When updating an existing unpacked installation, preserve its original folder path and extension identity. Do not uninstall or load a different path as an update. Keep Developer mode enabled for this unpacked installation.
 
 The [background audit](docs/AUDIT.md), [background architecture](docs/ARCHITECTURE.md), [historical live tests](docs/LIVE-VALIDATION.md), [current validation](docs/TIMETABLE-VALIDATION.md) and [roadmap](docs/ROADMAP.md) distinguish measured results from remaining limitations.
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { SCOPE, ORIGIN, configuration, defaultRecord, imageUrl, singleCssImage, backgroundLayers, assetId, isDashboard, visual } from '../src/background/model.js';
 
 test('configuration has one supported scope, validated modes and no unrelated fields', () => {
-  assert.deepEqual(configuration({ scope: SCOPE, mode: 'off', source: { kind: 'url', url: 'https://example.com/a' }, unrelated: true }), { scope: SCOPE, mode: 'off', visual: visual() });
+  assert.deepEqual(configuration({ scope: SCOPE, mode: 'off', source: { kind: 'url', url: 'https://example.com/a' }, unrelated: true }), { scope: SCOPE, mode: 'off', visual: visual(), appearance:{pages:'dashboard',surface:'original'} });
   assert.throws(() => configuration({ scope: 'another-site', mode: 'custom' }));
   assert.throws(() => configuration({ scope: SCOPE, mode: 'unknown' }));
   assert.equal(defaultRecord().revision, 0);
@@ -43,3 +43,5 @@ test('identical uploaded bytes have stable identity; changed bytes get a new ide
   await assert.rejects(assetId(new Blob(['x'], { type: 'image/svg+xml' })));
   await assert.rejects(assetId(new Blob([], { type: 'image/png' })));
 });
+
+test('all-page coverage reuses the canonical scope and rejects unsupported appearance options',async()=>{const {backgroundApplies}=await import('../src/background/model.js');const c=configuration({scope:SCOPE,mode:'custom',source:{kind:'url',url:'https://example.org/image.png'},appearance:{pages:'all',surface:'transparent'}});assert.equal(c.scope,SCOPE);assert.ok(backgroundApplies({origin:'https://vinuni.instructure.com',pathname:'/courses/42'},c));assert.ok(!backgroundApplies({origin:'https://other.invalid',pathname:'/'},c));assert.throws(()=>configuration({scope:SCOPE,mode:'off',appearance:{pages:'anywhere'}}));});

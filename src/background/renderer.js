@@ -36,6 +36,18 @@ export class BackgroundRenderer {
       html[${OWNER}] { isolation: isolate; }
       #${LAYER_ID} { position: fixed !important; inset: 0 !important; z-index: -1 !important; pointer-events: none !important; overflow: hidden !important; }
       #${LAYER_ID} > div { position: absolute !important; inset: 0 !important; background-repeat: no-repeat !important; }
+      html[${OWNER}][data-canvas-companion-surface=transparent] {
+        color-scheme: dark; --bctext-0:#eef3fa;--bctext-1:#bdc9dc;--bcborders:#d5e2ff30;--bclinks-ungradient:#9cdcfe;
+        --cc-surface:transparent;--cc-raised:#16223555;
+        --ic-brand-font-color-dark:#eef3fa;--ic-link-color:#9cdcfe;--ic-brand-primary:#9cdcfe;
+      }
+      html[${OWNER}][data-canvas-companion-surface=transparent] :is(body,#application,#wrapper,#main,#content,#not_right_side,.ic-Layout-contentMain,.ic-app-main-content,.ic-DashboardCard__header_content,.ic-DashboardCard__action-container,.ic-DashboardCard,.item-group-container,.item-group-condensed,.ig-header,.ig-row,.header-bar,.page-title,.ic-Action-header,.ic-Table,.ic-Table tr,.ic-Table td,.ic-Table th,.course-options,.list-view,.announcements,.discussion-topic,.discussion-header,.entry,.entry-content,.module-sequence-footer,.ic-Layout-contentWrapper,[class*="-view"]) {background-color:transparent!important;background-image:none!important;color:#eef3fa!important;}
+      html[${OWNER}][data-canvas-companion-surface=transparent] #content :is(h1,h2,h3,h4,h5,p,li,label,legend,dt,dd,td,th,.ig-title,.item_name,.discussion-title,.ic-DashboardCard__header-title,[class*="-text"],[class*="-heading"]) {color:#eef3fa!important;}
+      html[${OWNER}][data-canvas-companion-surface=transparent] #content a:not(.Button):not(.btn) {color:#9cdcfe!important;}
+      html[${OWNER}][data-canvas-companion-surface=transparent] :is(.ic-app-header,.ic-app-header__main-navigation,.ic-app-nav-toggle-and-crumbs,.ic-app-crumbs) {background:#10151b66!important;color:#eef3fa!important;}
+      html[${OWNER}][data-canvas-companion-surface=transparent] #content :is(input,select,textarea,.Button,.btn,[role=tab]) {background-color:#162235bb!important;color:#eef3fa!important;border-color:#c5daf844!important;}
+      html[${OWNER}][data-canvas-companion-surface=transparent] #content :is(.mce-container,.tox,.CodeMirror,.cm-editor) {background:#fff!important;color:#18212b!important;}
+      html[${OWNER}][data-canvas-companion-surface=transparent] #content [class*="-pill"] {background-color:#16223588!important;color:#dcdcaa!important;border-color:#d5e2ff30!important;}
       #${LAYER_ID} > img { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; max-width: none !important; pointer-events: none !important; }
     `;
     this.layer = this.document.createElement('div');
@@ -65,6 +77,8 @@ export class BackgroundRenderer {
   async render(record, assetUrl = null) {
     const token = ++this.generation;
     this.last = { record, assetUrl };
+    if(record.mode!=='off'&&record.appearance?.surface==='transparent')this.document.documentElement.dataset.canvasCompanionSurface='transparent';
+    else delete this.document.documentElement.dataset.canvasCompanionSurface;
     if (record.mode === 'off') { this.clear(); this.onStatus({ kind: 'off' }); return; }
     const inherited = record.mode === 'inherit' ? this.inherited() : null;
     const url = inherited?.url || (record.mode === 'custom' ? (record.source?.kind === 'url' ? record.source.url : assetUrl) : null);
@@ -79,7 +93,7 @@ export class BackgroundRenderer {
         if (token !== this.generation) return;
         this.loadedUrl = null;
         if (record.mode === 'inherit') this.clear();
-        else { this.mount(); this.layer.style.backgroundColor = record.visual.fallback; this.image.removeAttribute('src'); this.overlay.style.background = 'none'; }
+        else { this.mount(); this.layer.style.backgroundColor = record.appearance?.surface==='transparent'?'#151a22':record.visual.fallback; this.image.removeAttribute('src'); this.overlay.style.background = 'none'; }
         this.onStatus({ kind: 'error', message: error.message });
         return;
       }
@@ -103,6 +117,7 @@ export class BackgroundRenderer {
   clear() {
     this.generation++;
     this.document.documentElement.removeAttribute(OWNER);
+    delete this.document.documentElement.dataset.canvasCompanionSurface;
     this.layer?.remove(); this.style?.remove();
     this.layer = this.style = this.image = this.overlay = null;
     this.loadedUrl = null;

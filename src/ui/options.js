@@ -19,6 +19,8 @@ async function load() {
   release();
   current = snapshot.record; pendingUpload = selectedAsset = null; dirty = false;
   $('mode').value = current.mode;
+  $('pages').value = current.appearance?.pages || 'dashboard';
+  $('surface').value = current.appearance?.surface || 'original';
   $('url').value = current.source?.kind === 'url' ? current.source.url : '';
   $('upload').value = '';
   if (snapshot.asset) {
@@ -36,7 +38,7 @@ function values() {
   return visual(Object.fromEntries(fields.map(key => [key, ['fit', 'overlay', 'fallback'].includes(key) ? $(key).value : Number($(key).value)])));
 }
 function config() {
-  return configuration({ scope: SCOPE, mode: $('mode').value, visual: values(), source: selectedAsset ? { kind: 'asset', id: selectedAsset } : { kind: 'url', url: $('url').value } });
+  return configuration({ scope: SCOPE, mode: $('mode').value, appearance:{pages:$('pages').value,surface:$('surface').value}, visual: values(), source: selectedAsset ? { kind: 'asset', id: selectedAsset } : { kind: 'url', url: $('url').value } });
 }
 function preview() {
   $('custom').hidden = $('mode').value !== 'custom';
@@ -114,7 +116,7 @@ $('settings').addEventListener('submit', event => {
 });
 $('reload').addEventListener('click', () => void withBusy(async () => { selecting++; await load(); showSource(); }));
 $('remove').addEventListener('click', () => void withBusy(async () => {
-  await rpc('save', { config: { scope: SCOPE, mode: 'off' }, revision: current.revision });
+  await rpc('save', { config: { scope: SCOPE, mode: 'off', appearance:current.appearance, visual:current.visual }, revision: current.revision });
   await load(); status('Companion background removed. BetterCampus rendering is restored. Undo is available.', 'success');
 }));
 $('restore').addEventListener('click', () => void withBusy(async () => {

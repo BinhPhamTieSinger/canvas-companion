@@ -1,6 +1,6 @@
 # Local trial and rollback
 
-The 0.2.0 build adds the approved companion-owned academic timetable. See [current verification](TIMETABLE-VALIDATION.md) and the [historical background live checks](LIVE-VALIDATION.md). This does not certify every theme/layout or future Canvas change.
+The 0.3.0 build includes the approved companion-owned academic timetable. See [current verification](TIMETABLE-VALIDATION.md) and the [historical background live checks](LIVE-VALIDATION.md). This does not certify every theme/layout or future Canvas change.
 
 ## Build
 
@@ -12,7 +12,7 @@ npm run check
 npm run package
 ```
 
-No dependency installation is needed. For a new installation the unpacked folder is `dist/canvas-companion-0.2.0`; a ZIP and SHA-256 checksum are also generated in `dist`.
+No dependency installation is needed. For a new installation the unpacked folder is `dist/canvas-companion-0.3.0`; a ZIP and SHA-256 checksum are also generated in `dist`.
 
 ## Load in Chrome
 
@@ -49,3 +49,7 @@ After updating an unpacked build, use Chrome's Reload button on its extension ca
 The database upgrade from version 1 to 2 only adds academic stores. Existing background records/assets are not rewritten. Close older settings tabs before reloading the extension, then refresh Canvas tabs. If Chrome shows a historical invalidated-context cleanup error from the old build, it is separate from the corrected 0.2.0 cleanup path.
 
 Use the timetable’s academic backup separately from the background backup. A version-2 database should not be opened by the original version-1-only repository: disabling the companion is the safe immediate rollback. Retain the current files/data and backups while arranging a compatible code rollback; do not delete or downgrade the database.
+
+## Transparent appearance
+
+Open background settings, choose **All Canvas pages** and **Transparent · light text and colorful accents**, then save. Existing installations retain their prior page/surface options until explicitly changed. The selected image and overlay are reused. Embedded documents/editors retain their own surfaces.

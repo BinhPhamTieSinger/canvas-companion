@@ -36,7 +36,9 @@ export function visual(input = {}) {
 }
 export function configuration(input) {
   if (!input || input.scope !== SCOPE || !['inherit', 'custom', 'off'].includes(input.mode)) throw new Error('Unsupported background scope or mode.');
-  const result = { scope: SCOPE, mode: input.mode, visual: visual(input.visual) };
+  const appearance = { pages: 'dashboard', surface: 'original', ...input.appearance };
+  if (!['dashboard','all'].includes(appearance.pages) || !['original','transparent'].includes(appearance.surface)) throw new Error('Unsupported appearance option.');
+  const result = { scope: SCOPE, mode: input.mode, visual: visual(input.visual), appearance };
   if (input.mode === 'custom') {
     if (input.source?.kind === 'url') result.source = { kind: 'url', url: imageUrl(input.source.url) };
     else if (input.source?.kind === 'asset' && /^[a-f0-9]{64}$/.test(input.source.id)) result.source = { kind: 'asset', id: input.source.id };
@@ -85,3 +87,6 @@ export async function assetId(blob) {
   const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
   return [...new Uint8Array(digest)].map(v => v.toString(16).padStart(2, '0')).join('');
 }
+
+// Keep the original storage key so extending coverage never copies a saved image/configuration.
+export function backgroundApplies(location, record) { return location.origin === ORIGIN && (record?.appearance?.pages === 'all' || isDashboard(location)); }
