@@ -1,7 +1,7 @@
 import { ORIGIN } from '../background/model.js';
 import { scopeFor } from './model.js';
 import { validDate, validZone } from './time.js';
-const ALLOWED = new Set(['/api/v1/users/self/profile','/api/v1/users/self/colors','/api/v1/courses','/api/v1/planner/items','/api/v1/calendar_events']);
+const ALLOWED = new Set(['/api/v1/users/self/profile','/api/v1/users/self/colors','/api/v1/courses','/api/v1/planner/items','/api/v1/calendar_events','/api/v1/announcements']);
 export function sourceLink(value) { try {const u=new URL(value,ORIGIN);return u.origin===ORIGIN?`${u.origin}${u.pathname}${u.hash}`:'';}catch{return '';} }
 export function plainText(value) {
   const named={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:' '};
@@ -43,11 +43,11 @@ export class CanvasReader {
   constructor(fetcher=(...args)=>fetch(...args)) { this.fetcher=fetcher; }
   async response(input) {
     const url=new URL(input,ORIGIN);
-    if(url.origin!==ORIGIN||!ALLOWED.has(url.pathname))throw new Error('Unsupported Canvas read endpoint.');
+    if(url.origin!==ORIGIN||!(ALLOWED.has(url.pathname)||/^\/api\/v1\/courses\/\d+\/front_page$/.test(url.pathname)))throw new Error('Unsupported Canvas read endpoint.');
     let response;
     try {response=await this.fetcher(url.href,{method:'GET',credentials:'same-origin',redirect:'error',headers:{Accept:'application/json'},signal:AbortSignal.timeout(20000)});} catch {throw new Error('Canvas could not be reached. Your saved academic records are unchanged.');}
     if(response.status===401||response.status===403)throw new Error('Sign in to Canvas, or check that your account can access this calendar. No saved data was changed.');
-    if(!response.ok)throw new Error('Canvas returned an error. The previous successful snapshot is preserved.');
+    if(!response.ok)throw Object.assign(new Error('Canvas returned an error. The previous successful snapshot is preserved.'),{status:response.status});
     let data;try{data=await response.json();}catch{throw new Error('Canvas returned an unsupported response. Sign in through the official Canvas page and retry.');}
     return {data,response};
   }
@@ -65,17 +65,43 @@ export class CanvasReader {
     const {data}=await this.response('/api/v1/users/self/profile');
     return {scope:scopeFor(data.id),id:String(data.id),timezone:validZone(data.time_zone)?data.time_zone:null};
   }
+  async catalog() {
+    const response=await this.fetcher(new URL('../catalog/vinuni-fall-2026.json',import.meta.url).href,{method:'GET',credentials:'omit'});
+    if(!response.ok)throw new Error('The bundled course catalog is unavailable.');
+    return response.json();
+  }
+  async sources(courses,_from,_to) {
+    const sources=[],sourceWarnings=[];
+    const start=new Date(Date.now()-180*86400000).toISOString().slice(0,10),end=new Date(Date.now()+86400000).toISOString().slice(0,10);
+    for(const course of courses){
+      const id=String(course.id);if(!/^\d+$/.test(id))continue;
+      if(course.syllabus_body!=null)sources.push(await documentSource({key:`syllabus:${id}`,courseId:id,kind:'syllabus',title:'Canvas syllabus',url:`${ORIGIN}/courses/${id}/assignments/syllabus`,body:course.syllabus_body}));
+      try{const {data}=await this.response(`/api/v1/courses/${id}/front_page`);sources.push(await documentSource({key:`home:${id}`,courseId:id,kind:'home',title:data.title||'Course home',url:sourceLink(data.html_url||`/courses/${id}`),body:data.body||''}));}
+      catch(error){if(error.status!==404)sourceWarnings.push({courseId:id,kind:'home',message:'Course home could not be checked; previous source state is preserved.'});}
+      try{const rows=await this.pages(`/api/v1/announcements?context_codes[]=course_${id}&start_date=${start}&end_date=${end}&include[]=sections&per_page=100`);for(const a of rows)sources.push(await documentSource({key:`announcement:${a.id}`,courseId:id,kind:'announcement',title:a.title||'Announcement',url:sourceLink(a.html_url||`/courses/${id}/discussion_topics/${a.id}`),body:a.message||'',sections:(a.sections||[]).map(s=>plainText(s.name))}));}
+      catch{sourceWarnings.push({courseId:id,kind:'announcement',message:'Announcements could not be checked; previous source state is preserved.'});}
+    }
+    return {sources,sourceWarnings};
+  }
   async snapshot(profile,from,to) {
     if(!validDate(from)||!validDate(to)||to<from)throw new Error('Choose a valid Canvas date range.');
-    const [rawCourses,planner]=await Promise.all([this.pages('/api/v1/courses?enrollment_state=active&per_page=100'),this.pages(`/api/v1/planner/items?start_date=${from}&end_date=${to}&per_page=100`)]);
+    const [rawCourses,planner]=await Promise.all([this.pages('/api/v1/courses?enrollment_state=active&per_page=100&include[]=syllabus_body&include[]=sections'),this.pages(`/api/v1/planner/items?start_date=${from}&end_date=${to}&per_page=100`)]);
     let colors={};try{colors=(await this.response('/api/v1/users/self/colors')).data.custom_colors||{};}catch{/* Colors are presentation only; no academic source failure is concealed. */}
-    const courses=rawCourses.filter(course=>course.id!=null).map(course=>({id:String(course.id),name:plainText(course.name),code:plainText(course.course_code),color:colors[`course_${course.id}`]||'#4f7d72'}));
+    const courses=rawCourses.filter(course=>course.id!=null).map(course=>({id:String(course.id),name:plainText(course.name),code:plainText(course.course_code),color:colors[`course_${course.id}`]||'#4f7d72',sections:(course.sections||[]).map(s=>({id:String(s.id),name:plainText(s.name)}))}));
     const contexts=[`user_${profile.id}`,...courses.map(course=>`course_${course.id}`)],calendar=[];
     for(let offset=0;offset<contexts.length;offset+=10) {
       const params=new URLSearchParams({start_date:from,end_date:to,per_page:'100'});
       for(const code of contexts.slice(offset,offset+10))params.append('context_codes[]',code);
       for(const type of ['event','assignment'])calendar.push(...await this.pages(`/api/v1/calendar_events?${params}&type=${type}`));
     }
-    return {from,to,courses,items:mergeSources([...calendar.map(normalizeCalendar),...planner.map(normalizePlanner)])};
+    const sourceResult=await this.sources(rawCourses,from,to);
+    return {from,to,courses,items:mergeSources([...calendar.map(normalizeCalendar),...planner.map(normalizePlanner)]),...sourceResult};
   }
+}
+
+export async function documentSource({body,...source}) {
+  const bytes=new TextEncoder().encode(`${source.title}\n${body}`);
+  const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');
+  const summary=plainText(body).split(/Student Name|Student ID|Room list for each student/i)[0].slice(0,900);
+  return {...source,digest,summary};
 }

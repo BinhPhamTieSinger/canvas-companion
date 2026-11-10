@@ -5,6 +5,7 @@ import { projectEvents,visibleEvents,warnings,deadlineStatus,countdown } from '.
 import { dateIn,timeIn,addDays,windowFor,labelDate,minuteOfDay } from './time.js';
 import { el,button } from './dom.js';
 import { openEditor } from './forms.js';
+import { catalogDialog,sourceDialog } from './integration-ui.js';
 import { styles } from './styles.js';
 const TITLES={class:'Class',exam:'Examination',assignment:'Assignment',project:'Project',milestone:'Milestone',canvas_event:'Canvas event',event:'Event',office_hours:'Office hours'};
 const STATUS={today:'Due today',soon:'Due soon',overdue:'Overdue',upcoming:'Upcoming',completed:'Completed',undated:'No deadline'};
@@ -14,7 +15,7 @@ export class AcademicController {
     this.document=document;this.chrome=runtime;this.api=api;this.clock=clock;this.dashboard=dashboard;this.profile=null;this.ui=null;this.connecting=null;this.destroyed=false;
     this.listener=(changes,area)=>{if(area==='local'&&changes.academicRevision?.newValue?.scope===this.profile?.scope)void this.refresh();};
     runtime.storage.onChanged.addListener(this.listener);
-    this.timer=setInterval(()=>{if(this.ui&&!this.ui.hasEditor())this.ui.render();},60000);
+    this.timer=setInterval(()=>{if(this.ui&&!this.ui.hasEditor()){this.ui.render();void this.maybeSync();}},60000);
   }
   async rpc(action,data={}) {
     if(action!=='read'){const current=await this.api.profile();if(current.scope!==this.profile?.scope){await this.connect();throw new Error('Your Canvas account changed. Reopen the timetable before changing data.');}}
@@ -40,10 +41,11 @@ export class AcademicController {
         if(this.profile?.scope!==profile.scope){this.ui?.reset();this.profile=profile;}
         await this.refresh();
       }catch(error){this.profile=null;this.ui?.reset();this.ui?.message(error.message,true);}
-      finally{this.connecting=null;if(this.ui)this.ui.host.style.visibility='';}
+      finally{this.connecting=null;if(this.ui)this.ui.host.style.visibility='';void this.maybeSync();}
     })();return this.connecting;
   }
-  async focus() { if(!this.dashboard())return; await this.connect(); }
+  async focus() { if(!this.dashboard())return; await this.connect();await this.maybeSync(); }
+  async maybeSync(){if(this.profile&&this.ui?.state?.preferences.autoRefresh&&!this.ui.busy&&!this.ui.hasEditor()&&Date.now()-(this.lastAttempt||0)>60000){this.lastAttempt=Date.now();await this.ui.sync(false);}}
   async refresh() {
     if(!this.profile||!this.ui)return;
     try {const state=await this.rpc('read');if(state.scope!==this.profile?.scope)return;this.ui.setState(state);}catch(error){this.ui.message(error.message,true);}
@@ -90,14 +92,15 @@ export class AcademicWidget {
       }
     }catch{}
   }
-  async sync() {
-    if(this.busy||!this.state)return;this.busy=true;this.message('Reading authorized Canvas courses, planner items and calendars…');
+  async sync(force=true) {
+    if(this.busy||!this.state)return;this.busy=true;let leaseToken=null;this.message('Reading authorized Canvas courses, planner items and calendars…');
     try {
+      const lease=await this.controller.rpc('lease',{force});if(!lease.acquired){this.message(force?'A refresh is already running in another dashboard tab.':'');return;}leaseToken=lease.token;
       const profile=await this.controller.api.profile();
       if(profile.scope!==this.state.scope){await this.controller.connect();throw new Error('Your Canvas account changed. Reopen the timetable before syncing.');}
       const range=windowFor(this.view,this.date),snapshot=await this.controller.api.snapshot(profile,addDays(range.from,-30),addDays(range.to,90));
-      const state=await this.controller.rpc('sync',{snapshot});this.setState(state);this.message('Canvas source data refreshed. Personal records are unchanged.');
-    }catch(error){this.message(error.message,true);}finally{this.busy=false;this.render();}
+      const state=await this.controller.rpc('sync',{snapshot,leaseToken});this.setState(state);this.message('Canvas deadlines refreshed and course sources checked. Manual schedules are preserved; review Source updates for changes.');
+    }catch(error){this.message(error.message,true);}finally{if(leaseToken)try{await this.controller.rpc('release',{leaseToken});}catch{}this.busy=false;this.render();}
   }
   eventCard(event,{compact=false}={}) {
     const p=this.state.preferences,zone=p.timezone,now=this.controller.clock(),status=['assignment','project','milestone'].includes(event.kind)?deadlineStatus(event,now,zone,p.dueSoonHours):null;
@@ -180,13 +183,14 @@ export class AcademicWidget {
     if(!this.state){top.append(button('Retry connection',()=>this.controller.connect()));this.panel.replaceChildren(top,el('p',{class:`status ${this.error?'error':''}`,role:'status'},this.notice||'Connecting to Canvas…'));return;}
     const state=this.state,p=state.preferences,range=windowFor(this.view,this.date),now=this.controller.clock();
     const addKind=el('select',{'aria-label':'Record type'},...['class','exam','assignment','project','event','office_hours','course'].map(kind=>el('option',{value:kind},kind==='course'?'Manual course':TITLES[kind])));
-    top.append(el('div',{class:'top-actions'},addKind,button('Add',()=>this.edit(addKind.value),'primary',{disabled:this.busy}),button('Refresh Canvas',()=>this.sync(),'secondary',{disabled:this.busy}),button(this.collapsed?'Expand':'Collapse',()=>this.savePreferences({collapsed:!this.collapsed}),'icon',{'aria-expanded':!this.collapsed})));
+    top.append(el('div',{class:'top-actions'},addKind,button('Add',()=>this.edit(addKind.value),'primary',{disabled:this.busy}),button('Refresh Canvas',()=>this.sync(),'secondary',{disabled:this.busy}),button('Find class times',()=>catalogDialog(this),'secondary',{disabled:this.busy}),button(`Source updates${(this.state.sources||[]).some(s=>s.digest!==s.ackDigest)?' · '+this.state.sources.filter(s=>s.digest!==s.ackDigest).length:''}`,()=>sourceDialog(this)),button(this.collapsed?'Expand':'Collapse',()=>this.savePreferences({collapsed:!this.collapsed}),'icon',{'aria-expanded':!this.collapsed})));
     if(this.collapsed){this.panel.replaceChildren(top);return;}
     const toolbar=el('div',{class:'toolbar'},el('nav',{class:'views','aria-label':'Timetable views'},...VIEWS.map(([id,label])=>button(label,()=>this.savePreferences({view:id}),'secondary',{'aria-pressed':this.view===id}))),el('div',{class:'nav'},button('‹',()=>this.navigate(-1),'secondary',{'aria-label':'Previous period'}),el('span',{class:'period'},`${labelDate(range.from)}${range.from===range.to?'':' – '+labelDate(range.to)}`),button('Today',()=>{this.date=dateIn(now,p.timezone);this.render();}),button('›',()=>this.navigate(1),'secondary',{'aria-label':'Next period'})));
     const courses=[...(state.cache?.courses||[]),...state.records.filter(r=>r.kind==='course').map(r=>({id:r.id,name:r.data.title}))];
     const course=el('select',{'aria-label':'Filter course'},el('option',{value:''},'All courses'),...courses.map(c=>el('option',{value:c.id},c.name)));course.value=this.filter;course.addEventListener('change',()=>this.savePreferences({courseFilter:course.value}));
     const completed=el('input',{type:'checkbox',checked:this.showCompleted});completed.addEventListener('change',()=>this.savePreferences({showCompleted:completed.checked}));
-    const filters=el('div',{class:'filters'},course,el('label',{},completed,'Show completed'),el('span',{class:'hint'},p.timezone));
+    const auto=el('input',{type:'checkbox',checked:Boolean(p.autoRefresh),'aria-label':'Auto refresh Canvas while dashboard is open'});auto.addEventListener('change',async()=>{await this.savePreferences({autoRefresh:auto.checked});if(auto.checked)void this.controller.maybeSync();});
+    const filters=el('div',{class:'filters'},course,el('label',{},auto,'Auto refresh · 15 min'),el('label',{},completed,'Show completed'),el('span',{class:'hint'},p.timezone));
     const legend=el('div',{class:'legend'},...['class','exam','assignment','project'].map(kind=>el('span',{},el('i',{class:'type-dot',style:`--kind-color:${{class:'#4f7d72',exam:'#c46d46',assignment:'#557eb2',project:'#8e6db0'}[kind]}`}),TITLES[kind])));
     let events=projectEvents(state,range.from,range.to);if(this.filter)events=events.filter(e=>e.courseId===this.filter);if(!this.showCompleted)events=events.filter(e=>!e.completed);
     const visible=visibleEvents(events,range.from,range.to),alerts=warnings(visible,p,now),content=el('div',{class:'content'});

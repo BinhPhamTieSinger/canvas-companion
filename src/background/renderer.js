@@ -1,3 +1,4 @@
+import { glassStyles } from './glass.js';
 import { backgroundLayers, DEFAULT_VISUAL } from './model.js';
 
 export const OWNER = 'data-canvas-companion-background';
@@ -50,6 +51,7 @@ export class BackgroundRenderer {
       html[${OWNER}][data-canvas-companion-surface=transparent] #content [class*="-pill"] {background-color:#16223588!important;color:#dcdcaa!important;border-color:#d5e2ff30!important;}
       #${LAYER_ID} > img { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; max-width: none !important; pointer-events: none !important; }
     `;
+    this.style.textContent+=glassStyles;
     this.layer = this.document.createElement('div');
     this.layer.id = LAYER_ID;
     this.layer.setAttribute('aria-hidden', 'true');

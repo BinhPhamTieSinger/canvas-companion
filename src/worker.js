@@ -38,6 +38,10 @@ async function handle(message, sender) {
     let data;
     switch (message.action) {
       case 'academic.read': return academic.read(scope);
+      case 'academic.lease': return academic.lease(scope,Boolean(message.force));
+      case 'academic.release': return academic.release(scope,message.leaseToken);
+      case 'academic.acknowledge': data=await academic.acknowledge(scope,message.key,message.digest);break;
+      case 'academic.catalogImport': data=await academic.importCatalog(scope,message.records);break;
       case 'academic.export': return academic.export(scope);
       case 'academic.save':
         if(message.record?.scope !== scope) throw new Error('Academic account mismatch.');
@@ -45,7 +49,7 @@ async function handle(message, sender) {
       case 'academic.remove': data = await academic.remove(scope,message.kind,message.id,message.revision); break;
       case 'academic.undo': data = await academic.undo(scope,message.revision); break;
       case 'academic.preferences': data = await academic.setPreferences(scope,message.preferences,message.revision); break;
-      case 'academic.sync': data = await academic.sync(scope,message.snapshot); break;
+      case 'academic.sync': data = await academic.sync(scope,message.snapshot,message.leaseToken); break;
       case 'academic.import': data = await academic.import(scope,message.backup,message.revision); break;
       default: throw new Error('Unsupported academic command.');
     }

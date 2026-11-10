@@ -1,6 +1,6 @@
 import { ORIGIN } from '../background/model.js';
 import { validZone, validDate, validTime, zonedInstant, dateIn } from './time.js';
-export const DEFAULT_PREFS = Object.freeze({ timezone:'Asia/Ho_Chi_Minh', travelMinutes:15, dueSoonHours:72, clusterDays:3, clusterCount:3, view:'week', showCompleted:false, collapsed:false, courseFilter:'' });
+export const DEFAULT_PREFS = Object.freeze({ timezone:'Asia/Ho_Chi_Minh', travelMinutes:15, dueSoonHours:72, clusterDays:3, clusterCount:3, view:'week', showCompleted:false, collapsed:false, courseFilter:'',autoRefresh:false });
 export const KINDS = new Set(['class','exam','assignment','project','annotation','course','event','office_hours']);
 export const PRIORITIES = ['low','normal','high'];
 export const PREPARATION = ['not_started','preparing','ready'];
@@ -21,7 +21,7 @@ export function safeLink(value) {
 }
 export function preferences(value={}) {
   const p={...DEFAULT_PREFS,...value}; if(!validZone(p.timezone)) throw new Error('Choose a valid IANA timezone.');
-  return { timezone:p.timezone, travelMinutes:integer(p.travelMinutes,0,180), dueSoonHours:integer(p.dueSoonHours,1,336), clusterDays:integer(p.clusterDays,1,14), clusterCount:integer(p.clusterCount,2,20),view:choice(p.view,['day','week','month','exams','deadlines','overview'],'week'),showCompleted:Boolean(p.showCompleted),collapsed:Boolean(p.collapsed),courseFilter:text(p.courseFilter??'',100) };
+  return { autoRefresh:Boolean(p.autoRefresh),timezone:p.timezone, travelMinutes:integer(p.travelMinutes,0,180), dueSoonHours:integer(p.dueSoonHours,1,336), clusterDays:integer(p.clusterDays,1,14), clusterCount:integer(p.clusterCount,2,20),view:choice(p.view,['day','week','month','exams','deadlines','overview'],'week'),showCompleted:Boolean(p.showCompleted),collapsed:Boolean(p.collapsed),courseFilter:text(p.courseFilter??'',100) };
 }
 export function validateRecord(input) {
   if(!validScope(input?.scope)||!KINDS.has(input.kind)) throw new Error('Unsupported academic account or record type.');
@@ -41,7 +41,7 @@ export function validateRecord(input) {
       if(!validTime(m.start)||!validTime(m.end)) throw new Error('Each meeting needs valid start and end times.');
       const day=integer(m.day,1,7),overnight=Boolean(m.overnight);
       if((!overnight&&m.end<=m.start)||(overnight&&m.end>m.start)) throw new Error('Class end must follow start; mark an overnight meeting explicitly.');
-      return {id:id(m.id),activeDates:(m.activeDates??[]).map(v=>date(v,'Meeting date')),skippedDates:(m.skippedDates??[]).map(v=>date(v,'Skipped meeting date')),sessionType:choice(m.sessionType,['lecture','lab','tutorial','seminar','other'],'lecture'),day,start:m.start,end:m.end,overnight,room:text(m.room??'',120),building:text(m.building??'',120),campus:text(m.campus??'',160)};
+      return {id:id(m.id),activeDates:(m.activeDates??[]).map(v=>date(v,'Meeting date')),skippedDates:(m.skippedDates??[]).map(v=>date(v,'Skipped meeting date')),sessionType:choice(m.sessionType==='tutorial'?'recitation':m.sessionType,['lecture','lab','recitation','seminar','other'],'lecture'),day,start:m.start,end:m.end,overnight,room:text(m.room??'',120),building:text(m.building??'',120),campus:text(m.campus??'',160)};
     });
     if(new Set(meetings.map(m=>m.id)).size!==meetings.length) throw new Error('Meeting identities must be unique.');
     const skipped=(d.skippedDates??[]).map(value=>date(value,'Skipped class date'));

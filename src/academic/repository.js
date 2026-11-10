@@ -15,7 +15,7 @@ export class AcademicRepository {
     if(!validScope(scope)) throw new Error('Reconnect to your Canvas account.');
     const db=await this.db(),tx=db.transaction(['academicRecords','academicMeta','academicCache'],'readonly');
     const [rows,meta,cache]=await Promise.all([request(tx.objectStore('academicRecords').index('scope').getAll(scope)),request(tx.objectStore('academicMeta').get(scope)),request(tx.objectStore('academicCache').get(scope))]);
-    return {...(meta||metadata(scope)),records:rows.filter(row=>!row.deleted),cache:cache||null};
+    return {...(meta||metadata(scope)),preferences:preferences(meta?.preferences),sources:meta?.sources||[],sourceWarnings:meta?.sourceWarnings||[],records:rows.filter(row=>!row.deleted),cache:cache||null};
   }
   async change(scope,operation) {
     if(!validScope(scope)) throw new Error('Reconnect to your Canvas account.');
@@ -60,7 +60,7 @@ export class AcademicRepository {
     const clean=preferences(value);
     return this.change(scope,async(_tx,meta)=>{if(meta.revision!==revision)throw conflict();meta.preferences=clean;});
   }
-  async sync(scope,input) {
+  async sync(scope,input,leaseToken=null) {
     if(!validDate(input?.from)||!validDate(input?.to)||input.to<input.from||!Array.isArray(input.items)||input.items.length>10000||!Array.isArray(input.courses)||input.courses.length>2000) throw new Error('Canvas returned an unsupported data range.');
     const items=new Map();
     for(const item of input.items) {
@@ -69,8 +69,32 @@ export class AcademicRepository {
       if(clean.url&&new URL(clean.url).origin!==ORIGIN) throw new Error('Canvas returned an unsupported source link.');
       items.set(clean.key,{...items.get(clean.key),...clean});
     }
-    const courses=input.courses.map(course=>({id:text(String(course.id),100),name:text(course.name??'',300),code:text(course.code??'',100),color:/^#[a-f0-9]{6}$/i.test(course.color??'')?course.color:'#4f7d72'}));
-    return this.change(scope,async(tx)=>tx.objectStore('academicCache').put({scope,from:input.from,to:input.to,courses,items:[...items.values()],syncedAt:new Date().toISOString()}));
+    const courses=input.courses.map(course=>({id:text(String(course.id),100),name:text(course.name??'',300),code:text(course.code??'',100),color:/^#[a-f0-9]{6}$/i.test(course.color??'')?course.color:'#4f7d72',sections:(course.sections||[]).slice(0,100).map(s=>({id:text(String(s.id),100),name:text(s.name||'',200)}))}));
+    const incoming=input.sources?.map(source=>{
+      if(!/^https:\/\/vinuni\.instructure\.com\//.test(source.url)||!/^([a-f0-9]{64})$/.test(source.digest)||!/^((home|syllabus|announcement):\d+)$/.test(source.key))throw new Error('Invalid course source.');
+      return {key:source.key,courseId:text(source.courseId,100),kind:source.kind,title:text(source.title,300),url:safeLink(source.url),digest:source.digest,summary:text(source.summary||'',1200),sections:(source.sections||[]).map(v=>text(v,200))};
+    });
+    if(incoming?.length>10000)throw new Error('Too many course sources.');
+    return this.change(scope,async(tx,meta)=>{
+      if(leaseToken&&(meta.refreshLeaseToken!==leaseToken||meta.refreshLeaseUntil<=Date.now()))throw conflict();
+      tx.objectStore('academicCache').put({scope,from:input.from,to:input.to,courses,items:[...items.values()],syncedAt:new Date().toISOString()});
+      meta.refreshLeaseUntil=0;
+      if(incoming){const first=!meta.sources,previous=new Map((meta.sources||[]).map(s=>[s.key,s]));for(const source of incoming){const old=previous.get(source.key);previous.set(source.key,{...source,ackDigest:old?.ackDigest||(first?source.digest:null),observedAt:new Date().toISOString()});}meta.sources=[...previous.values()];meta.sourceWarnings=(input.sourceWarnings||[]).slice(0,200).map(w=>({courseId:text(String(w.courseId||''),100),kind:['home','announcement','syllabus'].includes(w.kind)?w.kind:'home',message:text(w.message||'Course source could not be checked.',300)}));}
+    });
+  }
+  async lease(scope,force=false) {
+    if(!validScope(scope))throw new Error('Reconnect to Canvas.');
+    const db=await this.db(),tx=db.transaction(['academicMeta','academicCache'],'readwrite'),done=completed(tx),meta=(await request(tx.objectStore('academicMeta').get(scope)))||metadata(scope),cache=await request(tx.objectStore('academicCache').get(scope)),now=Date.now();
+    const acquired=!(meta.refreshLeaseUntil>now)&&Boolean(force||!cache||now-Date.parse(cache.syncedAt)>=15*60000);
+    if(acquired){meta.refreshLeaseToken=crypto.randomUUID();meta.refreshLeaseUntil=now+5*60000;tx.objectStore('academicMeta').put(meta);}await done;return {acquired,token:acquired?meta.refreshLeaseToken:null};
+  }
+  async release(scope,token){if(!validScope(scope))return;const db=await this.db(),tx=db.transaction('academicMeta','readwrite'),done=completed(tx),meta=await request(tx.objectStore('academicMeta').get(scope));if(meta&&meta.refreshLeaseToken===token){meta.refreshLeaseUntil=0;tx.objectStore('academicMeta').put(meta);}await done;return {released:true};}
+  async acknowledge(scope,key,digest){return this.change(scope,async(_tx,meta)=>{const source=meta.sources?.find(s=>s.key===key);if(!source||source.digest!==digest)throw conflict();source.ackDigest=digest;});}
+  async importCatalog(scope,records){
+    if(!Array.isArray(records)||records.length>100)throw new Error('Choose up to 100 course sections.');
+    const clean=records.map(r=>validateRecord({...r,scope}));if(clean.some(r=>r.kind!=='class'||!r.id.startsWith('catalog:')))throw new Error('Unsupported catalog record.');
+    if(new Set(clean.map(r=>r.data.courseId)).size!==clean.length)throw new Error('Choose one registered section per course.');
+    return this.change(scope,async(tx)=>{const store=tx.objectStore('academicRecords'),existing=await request(store.index('scope').getAll(scope));for(const r of clean){if(existing.some(old=>!old.deleted&&old.kind==='class'&&old.data.courseId===r.data.courseId))throw new Error('A class for this course already exists. Edit it rather than importing another copy.');const key=keyFor(r),old=await request(store.get(key));if(old&&!old.deleted)throw conflict();store.put({...r,key,revision:(old?.revision||0)+1,deleted:false,updatedAt:new Date().toISOString()});}});
   }
   async export(scope) { const state=await this.read(scope); return {format:'canvas-companion-academic',version:1,scope,preferences:state.preferences,records:state.records.map(({scope,id,kind,data})=>({scope,id,kind,data}))}; }
   async import(scope,backup,revision) {

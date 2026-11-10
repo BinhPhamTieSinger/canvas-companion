@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Canvas Companion",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A native Canvas academic timetable with canonical backgrounds, classes, examinations, assignment references and projects.",
   "permissions": [
     "storage"
@@ -45,7 +45,11 @@
         "src/academic/model.js",
         "src/academic/styles.js",
         "src/academic/time.js",
-        "src/academic/widget.js"
+        "src/academic/widget.js",
+        "src/background/glass.js",
+        "src/academic/catalog.js",
+        "src/academic/integration-ui.js",
+        "src/catalog/vinuni-fall-2026.json"
       ],
       "matches": [
         "https://vinuni.instructure.com/*"

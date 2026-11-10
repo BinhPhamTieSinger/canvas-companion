@@ -55,6 +55,22 @@
     {
       "name": "backup cannot bypass the Canvas assignment deduplication rule",
       "passed": true
+    },
+    {
+      "name": "refresh leases have one cross-tab owner and another tab cannot release it",
+      "passed": true
+    },
+    {
+      "name": "source baselines, edits and acknowledgements preserve manual records",
+      "passed": true
+    },
+    {
+      "name": "a late response from a released lease cannot replace the successful cache",
+      "passed": true
+    },
+    {
+      "name": "catalog import is atomic and rejects repeat or conflicting manual classes",
+      "passed": true
     }
   ]
 }

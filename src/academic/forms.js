@@ -5,7 +5,7 @@ const priorities=[['normal','Normal'],['high','High'],['low','Low']];
 const statuses=[['not_submitted','Not submitted'],['submitted','Submitted'],['returned','Returned']];
 const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 export function openEditor(root,{record,kind=record?.kind,state,event,onSave,onDelete}) {
-  const data=record?.data||{},zone=state.preferences.timezone;
+  const data=record?.data||(event?.sourceUrl?{title:event.title,courseId:event.courseId,notes:`Source: ${event.sourceUrl}`} : {}),zone=state.preferences.timezone;
   const dialog=el('dialog',{class:'editor'}),form=el('form'),error=el('p',{class:'error',role:'alert'}),fields={};
   const title=kind==='preferences'?'Timetable preferences':`${record?'Edit':'Add'} ${kind==='annotation'?'personal assignment details':({office_hours:'office hours',exam:'examination',event:'event'}[kind]||kind)}`;
   const heading=el('h2',{},title);heading.id=`editor-${crypto.randomUUID()}`;dialog.setAttribute('aria-labelledby',heading.id);
@@ -57,7 +57,7 @@ export function openEditor(root,{record,kind=record?.kind,state,event,onSave,onD
           input.id=`m-${crypto.randomUUID()}`;if(type==='select')input.value=value;
           row[key]=input;box.append(el('label',{htmlFor:input.id},label),input);
         };
-        item('sessionType','Session type','select',meeting.sessionType||'lecture');row.sessionType.replaceChildren(...[['lecture','Lecture'],['lab','Lab'],['tutorial','Tutorial'],['seminar','Seminar'],['other','Other']].map(([value,label])=>el('option',{value},label)));row.sessionType.value=meeting.sessionType||'lecture';
+        item('sessionType','Session type','select',(meeting.sessionType==='tutorial'?'recitation':meeting.sessionType)||'lecture');row.sessionType.replaceChildren(...[['lecture','Lecture'],['lab','Lab'],['recitation','Recitation'],['seminar','Seminar'],['other','Other']].map(([value,label])=>el('option',{value},label)));row.sessionType.value=(meeting.sessionType==='tutorial'?'recitation':meeting.sessionType)||'lecture';
         item('day','Day','select',String(meeting.day||''),{required:true});item('start','Start','time',meeting.start||'',{required:true});item('end','End','time',meeting.end||'',{required:true});
         item('overnight','Ends on the following day','checkbox','');row.overnight.checked=Boolean(meeting.overnight);
         for(const [key,label] of [['room','Classroom'],['building','Building'],['campus','Campus / location']])item(key,label,'text',meeting[key]||'');

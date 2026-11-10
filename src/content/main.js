@@ -1,3 +1,4 @@
+import { AuthoredSurfaces } from '../background/glass.js';
 import { BackgroundRenderer } from '../background/renderer.js';
 import { AcademicController } from '../academic/widget.js';
 import { isDashboard, backgroundApplies } from '../background/model.js';
@@ -6,6 +7,7 @@ const marker = '__canvasCompanionBackgroundV1';
 if (!globalThis[marker]) {
   globalThis[marker] = true;
   const academic = new AcademicController(document);
+  const authoredSurfaces = new AuthoredSurfaces(document);
   void academic.route();
   let snapshot, objectUrl, assetKey, busy = false, queued = false;
   const renderer = new BackgroundRenderer(document, { onStatus(status) {
@@ -29,6 +31,7 @@ if (!globalThis[marker]) {
         }
       }
       await renderer.render(snapshot.record, objectUrl);
+      authoredSurfaces.schedule();
     } catch { renderer.clear(); document.documentElement.dataset.canvasCompanionStatus = 'error'; }
     finally { busy = false; if (queued) { queued = false; void refresh(); } }
   }
@@ -51,7 +54,7 @@ if (!globalThis[marker]) {
   observer.observe(document.body, { childList: true });
   let path = location.pathname;
   const navigationTimer = setInterval(() => {
-    if (!chrome.runtime?.id) { observer.disconnect(); clearInterval(navigationTimer); clearTimeout(scheduled); renderer.destroy(); academic.destroy();document.getElementById('canvas-companion-timetable-link')?.remove(); releaseAsset(); return; }
+    if (!chrome.runtime?.id) { observer.disconnect(); clearInterval(navigationTimer); clearTimeout(scheduled); renderer.destroy(); authoredSurfaces.destroy(); academic.destroy();document.getElementById('canvas-companion-timetable-link')?.remove(); releaseAsset(); return; }
     void academic.route();
     if(!document.getElementById('canvas-companion-timetable-link')){const link=document.createElement('a');link.id='canvas-companion-timetable-link';link.href='/#canvas-companion-academic';link.textContent='Timetable';link.style.cssText='position:fixed;right:22px;bottom:18px;z-index:90;background:#162235df;color:#9cdcfe;border:1px solid #9cdcfe66;border-radius:20px;padding:9px 16px;font:600 13px system-ui;text-decoration:none;box-shadow:0 4px 18px #0004';document.body.append(link);}
     if (path !== location.pathname) { path = location.pathname; schedule(); }
@@ -60,7 +63,7 @@ if (!globalThis[marker]) {
   window.addEventListener('pagehide', event => {
     if (event.persisted) return;
     observer.disconnect(); clearInterval(navigationTimer); clearTimeout(scheduled);
-    chrome.storage?.onChanged?.removeListener(changed); renderer.destroy(); academic.destroy();document.getElementById('canvas-companion-timetable-link')?.remove(); releaseAsset();
+    chrome.storage?.onChanged?.removeListener(changed); renderer.destroy(); authoredSurfaces.destroy(); academic.destroy();document.getElementById('canvas-companion-timetable-link')?.remove(); releaseAsset();
   }, { once: true });
   void refresh();
 }
