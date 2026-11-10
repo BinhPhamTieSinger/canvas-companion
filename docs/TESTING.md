@@ -13,6 +13,7 @@ Date: 10 November 2026. This report distinguishes automated/synthetic evidence f
 | Narrow layout | 360 × 800 viewport; document width 360; no horizontal overflow |
 | Package preparation | Extension-only allowlist; ZIP/checksum generation |
 | Original extension inspection | Temporarily enabled and restored to its prior disabled state; saved theme seen, original wallpaper repetition not reproduced |
+| Installed Chrome extension / authenticated Canvas | Passed the specific checks in [live validation](LIVE-VALIDATION.md), including Chrome restart |
 
 The browser suite uses actual IndexedDB and image elements. It checks canonical record counts, hash reuse, simultaneous stale-edit rejection, reopening persistence, backup validation/corruption rejection, removal/undo, bounded asset cleanup, single-layer rendering, visual controls, Canvas shell replacement, reversible ownership, inherited overlays and filters, image removal/failure, and late-load cancellation.
 
@@ -33,9 +34,8 @@ Open `http://127.0.0.1:4178/tests/browser/` for the renderer/storage suite. The 
 
 ## Still unverified
 
-- Installation as an actual unpacked Chrome extension and Chrome content-script/worker transport.
-- University CSP and authenticated Canvas compatibility for the exact affected wallpaper.
-- Live cross-tab extension signals, service-worker suspension, browser restart, quota exhaustion and large-upload performance.
+- The exact original BetterCampus wallpaper problem; it was not reproduced with its original image/configuration. A synthetic local companion image loaded under the university CSP.
+- Immediate delivery to hidden tabs independent of focus refresh, deliberately suspended-worker edge cases, quota exhaustion and large-upload performance. An open dashboard updated without a page reload and browser restart persistence passed.
 - Exhaustive original themes, fonts, cards, custom layouts, new/classic dashboard variants and productivity regressions.
 - Formal screen-reader and contrast audit; keyboard labels/focus and responsive CSS are implemented, not fully accessibility-certified.
 - All timetable, examination, assignment/project, reminder and calendar-sync requirements; these are not implemented yet.

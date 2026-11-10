@@ -8,9 +8,13 @@
 - One dashboard image layer, inheritance adapter, custom controls and preview.
 - Unit tests, real-browser fixtures, settings UI checks and packaging.
 
-## Next: installed-extension acceptance
+## Installed-extension acceptance
 
-The user must explicitly load the reviewed local build. Verify actual content-script/worker startup, Chrome runtime transport, university CSP, cross-tab notifications, original theme/card/layout behavior, navigation and browser restart. Reproduce the exact affected background. Fixture results are not a substitute for these checks.
+The user explicitly approved installation. The initial live trial verified worker/content startup, local image loading, refresh, an open-tab change, navigation, removal/recovery, coexistence with the saved BetterCampus theme and Chrome restart persistence. See [live validation](LIVE-VALIDATION.md). Exhaustive theme/layout coverage and the exact original affected wallpaper remain open.
+
+## Next: planner ownership decision
+
+[Planner integration findings](PLANNER-INTEGRATION.md) describe the existing supported schedule features, the missing private-data contract, and the concrete fallback requiring approval.
 
 ## Timetable interoperability gate
 

@@ -17,7 +17,7 @@ The companion cannot read or migrate another extension's private storage. Origin
 
 ## Install and verify
 
-See [installation and rollback](docs/INSTALL.md). Load the generated unpacked folder after reviewing the code and the narrow Canvas permission. The companion is **not installed automatically**.
+See [installation and rollback](docs/INSTALL.md). Load the generated unpacked folder after reviewing the code and the narrow Canvas permission. The reviewed 0.1.0 build was installed in the university Chrome profile with explicit user approval. A new installation still requires reviewing and granting the stated access. Keep Developer mode enabled for the unpacked build; this Chrome installation disables it when Developer mode is off.
 
 ```sh
 npm test
@@ -31,7 +31,7 @@ Node 22 or newer is required for development checks; no dependency installation 
 
 Eight model tests and 19 real-browser fixture checks pass. The actual settings UI was exercised with a synthetic local image through save, reload, remove and undo; a 360-pixel viewport had no horizontal overflow. Browser fixture storage is separate from Chrome extension storage.
 
-The packaged extension has not yet been installed and accepted on the authenticated Canvas dashboard. Chrome restart persistence, complete BetterCampus theme/layout regression coverage, and live cross-tab extension notifications remain pending. The timetable, examinations, projects and reminders are not implemented in this release.
+The unpacked extension was also tested on authenticated Canvas: upload/save, refresh, an open-tab visual update, course navigation, BetterCampus theme coexistence, removal/undo, image failure, and Chrome restart persistence passed. See [live validation](docs/LIVE-VALIDATION.md) for exact evidence and limitations. Exhaustive theme/layout regression coverage remains open. The timetable, examinations, projects and reminders are not implemented in this release.
 
 ![Background settings with a synthetic image](docs/settings-preview.jpg)
 

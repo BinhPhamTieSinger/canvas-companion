@@ -28,7 +28,7 @@ The main bundle's approximately 5.3 MB size, broad document-start injection, obs
 
 ## Approval and current stage
 
-The user approved the scoped companion architecture and authorized publication to their GitHub account, including a choice of visibility. Private visibility was selected. The background increment is implemented and fixture-tested; install-time permission and authenticated Canvas acceptance remain pending. Timetable implementation is still gated on planner interoperability.
+The user approved the scoped companion architecture and authorized publication to their GitHub account, including a choice of visibility. Private visibility was selected. The background increment is implemented, fixture-tested and installed with explicit user approval. The specific authenticated Canvas checks, including Chrome restart, passed; see [live validation](LIVE-VALIDATION.md). Timetable implementation is still gated on planner interoperability and the documented ownership decision.
 
 The full local report includes environment-specific paths and is deliberately excluded from Git. Repository screenshots, fixtures and test evidence contain synthetic data only.
 
