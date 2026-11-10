@@ -1,3 +1,4 @@
+import { pendingSources,SIGNALS } from './review.js';
 import { el,button } from './dom.js';
 import { candidates,catalogRecord } from './catalog.js';
 export async function catalogDialog(widget){
@@ -20,9 +21,31 @@ export async function catalogDialog(widget){
   }catch(e){widget.message(e.message,true);}
 }
 export function sourceDialog(widget){
-  const state=widget.state,sources=state.sources||[],dialog=el('dialog',{class:'editor','aria-label':'Course source updates'}),body=el('div',{style:'padding:22px'});
-  body.append(el('h2',{},'Course source updates'),el('p',{class:'hint'},'Canvas deadlines and calendar events refresh directly. Home, syllabus and announcement changes are tracked for review; they do not silently overwrite manual classes, rooms or exams. External Simple Syllabus embeds cannot be monitored without a supported provider export.'));
-  for(const warning of state.sourceWarnings||[])body.append(el('p',{class:'error'},warning.message));
-  const search=el('input',{type:'search',placeholder:'Filter by course or source title','aria-label':'Filter course sources'}),list=el('div');body.append(search,list);
-  const render=()=>{list.replaceChildren();const term=search.value.toLowerCase();const courses=new Map((state.cache?.courses||[]).map(c=>[c.id,c.name]));for(const s of [...sources].sort((a,b)=>Number(a.digest===a.ackDigest)-Number(b.digest===b.ackDigest))){const name=courses.get(s.courseId)||'';if(term&&!`${name} ${s.title}`.toLowerCase().includes(term))continue;const changed=s.digest!==s.ackDigest,section=el('article',{class:'event'},el('div',{},el('strong',{},`${changed?'Needs review · ':''}${s.title}`),el('p',{class:'hint'},`${name} · ${s.kind}${s.sections?.length?' · '+s.sections.join(', '):''}`),el('p',{class:'hint'},s.summary),el('a',{href:s.url,target:'_blank',rel:'noopener noreferrer'},'Open original source')));const actions=el('div',{class:'event-actions'});if(changed)actions.append(button('Mark reviewed',async()=>{try{await widget.mutate('acknowledge',{key:s.key,digest:s.digest});dialog.close();sourceDialog(widget);}catch{}}));const linked=state.records.filter(r=>r.data.courseId===s.courseId&&['class','exam','event','office_hours'].includes(r.kind));for(const row of linked)actions.append(button(`Edit ${row.data.title}`,()=>{dialog.close();widget.edit(row.kind,row);}));actions.append(button('Add examination',()=>{dialog.close();widget.edit('exam',null,{courseId:s.courseId,sourceUrl:s.url,title:s.title});}));section.append(actions);list.append(section);}if(!sources.length)list.append(el('p',{class:'hint'},'Refresh Canvas to establish a source baseline. Subsequent new or edited documents will be highlighted.'));};search.addEventListener('input',render);render();body.append(el('div',{class:'dialog-actions'},button('Close',()=>dialog.close())));dialog.append(body);widget.root.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
+ const state=widget.state,sources=state.sources||[],dialog=el('dialog',{class:'editor','aria-label':'Course source updates'}),body=el('div',{class:'source-review',style:'padding:22px'});
+ const pending=pendingSources(sources);
+ body.append(el('h2',{},'Course source updates'),el('p',{class:'hint'},'A changed document needs your review. Topic labels are keyword hints, not verified changes to an exam, date or room. Structured Canvas deadlines update directly; manual schedules change only when you save an edit. External Simple Syllabus embeds require a supported export.'));
+ if(pending.length)body.append(el('div',{class:'review-notice',role:'status'},el('strong',{},`${pending.length} source update${pending.length===1?' needs':'s need'} review`),el('p',{},'Open the original, confirm which section it concerns, then update an existing item or add one. Mark reviewed when finished.')));
+ for(const warning of state.sourceWarnings||[])body.append(el('p',{class:'error'},warning.message));
+ const search=el('input',{type:'search',placeholder:'Filter by course or source title','aria-label':'Filter course sources'}),only=el('input',{type:'checkbox',checked:pending.length>0,'aria-label':'Only sources needing review'}),list=el('div');
+ body.append(search,el('label',{class:'check-field'},only,'Only sources needing review'),list);
+ const render=()=>{
+  list.replaceChildren();const term=search.value.toLowerCase(),courses=new Map((state.cache?.courses||[]).map(c=>[c.id,c.name]));let count=0;
+  for(const s of [...sources].sort((a,b)=>Number(a.digest===a.ackDigest)-Number(b.digest===b.ackDigest))){
+   const name=courses.get(s.courseId)||'',changed=s.digest!==s.ackDigest;
+   if((only.checked&&!changed)||(term&&!`${name} ${s.title}`.toLowerCase().includes(term)))continue;
+   count++;const text=el('div',{class:'event-main'},el('strong',{},`${changed?'Needs review · ':''}${s.title}`),el('p',{class:'hint'},`${name} · ${s.kind}${s.sections?.length?' · '+s.sections.join(', '):''}`));
+   if(changed)text.append(el('p',{class:'review-label'},s.changeKind==='new'?'New source since your baseline':'Source edited since your last review'));
+   if(s.signals?.length)text.append(el('p',{class:'hint'},s.signals.map(key=>SIGNALS[key]).filter(Boolean).join(' · ')));
+   text.append(el('p',{class:'hint'},s.summary),el('a',{href:s.url,target:'_blank',rel:'noopener noreferrer'},'Open original source'));
+   if(changed&&s.previousSummary)text.append(el('details',{},el('summary',{},'Previous saved excerpt'),el('p',{class:'hint'},s.previousSummary),el('p',{class:'hint'},s.previousSummary===s.summary?'The digest changed outside the saved excerpt or in formatting. Open the original to review.':'Excerpts provide context; confirm the actual change in the original.')));
+   const section=el('article',{class:`event source-event ${changed?'needs-review':''}`},text),actions=el('div',{class:'event-actions'});
+   if(changed)actions.append(button('Mark reviewed',async()=>{try{await widget.mutate('acknowledge',{key:s.key,digest:s.digest});dialog.close();sourceDialog(widget);}catch{}}));
+   for(const row of state.records.filter(r=>r.data.courseId===s.courseId&&['class','exam','event','office_hours','assignment'].includes(r.kind)))actions.append(button(`Edit ${row.data.title}`,()=>{dialog.close();widget.edit(row.kind,row);}));
+   for(const [kind,label] of [['exam','Add examination'],['event','Add event'],['assignment','Add personal deadline']])actions.append(button(label,()=>{dialog.close();widget.edit(kind,null,{courseId:s.courseId,sourceUrl:s.url,title:s.title});}));
+   section.append(actions);list.append(section);
+  }
+  if(!count)list.append(el('p',{class:'hint'},sources.length?'No sources match this filter.':'Refresh Canvas to establish a source baseline. Subsequent new or edited sources will appear here.'));
+ };
+ search.addEventListener('input',render);only.addEventListener('change',render);render();
+ body.append(el('div',{class:'dialog-actions'},button('Close',()=>dialog.close())));dialog.append(body);widget.root.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
 }

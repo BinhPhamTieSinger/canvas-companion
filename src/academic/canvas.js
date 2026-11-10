@@ -1,3 +1,4 @@
+import { sourceSignals } from './review.js';
 import { ORIGIN } from '../background/model.js';
 import { scopeFor } from './model.js';
 import { validDate, validZone } from './time.js';
@@ -103,5 +104,5 @@ export async function documentSource({body,...source}) {
   const bytes=new TextEncoder().encode(`${source.title}\n${body}`);
   const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');
   const summary=plainText(body).split(/Student Name|Student ID|Room list for each student/i)[0].slice(0,900);
-  return {...source,digest,summary};
+  return {...source,digest,summary,signals:sourceSignals(`${source.title} ${plainText(body)}`)};
 }

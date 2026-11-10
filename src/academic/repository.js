@@ -1,3 +1,4 @@
+import { mergeDocument,SIGNALS } from './review.js';
 import { openDatabase, request, completed } from '../storage/database.js';
 import { validateRecord, validScope, preferences, safeLink, text, annotationId, assignmentKeyFromLink } from './model.js';
 import { validDate } from './time.js';
@@ -72,14 +73,14 @@ export class AcademicRepository {
     const courses=input.courses.map(course=>({id:text(String(course.id),100),name:text(course.name??'',300),code:text(course.code??'',100),color:/^#[a-f0-9]{6}$/i.test(course.color??'')?course.color:'#4f7d72',sections:(course.sections||[]).slice(0,100).map(s=>({id:text(String(s.id),100),name:text(s.name||'',200)}))}));
     const incoming=input.sources?.map(source=>{
       if(!/^https:\/\/vinuni\.instructure\.com\//.test(source.url)||!/^([a-f0-9]{64})$/.test(source.digest)||!/^((home|syllabus|announcement):\d+)$/.test(source.key))throw new Error('Invalid course source.');
-      return {key:source.key,courseId:text(source.courseId,100),kind:source.kind,title:text(source.title,300),url:safeLink(source.url),digest:source.digest,summary:text(source.summary||'',1200),sections:(source.sections||[]).map(v=>text(v,200))};
+      return {key:source.key,courseId:text(source.courseId,100),kind:source.kind,title:text(source.title,300),url:safeLink(source.url),digest:source.digest,summary:text(source.summary||'',1200),signals:(source.signals||[]).filter(v=>Object.hasOwn(SIGNALS,v)),sections:(source.sections||[]).map(v=>text(v,200))};
     });
     if(incoming?.length>10000)throw new Error('Too many course sources.');
     return this.change(scope,async(tx,meta)=>{
       if(leaseToken&&(meta.refreshLeaseToken!==leaseToken||meta.refreshLeaseUntil<=Date.now()))throw conflict();
       tx.objectStore('academicCache').put({scope,from:input.from,to:input.to,courses,items:[...items.values()],syncedAt:new Date().toISOString()});
       meta.refreshLeaseUntil=0;
-      if(incoming){const first=!meta.sources,previous=new Map((meta.sources||[]).map(s=>[s.key,s]));for(const source of incoming){const old=previous.get(source.key);previous.set(source.key,{...source,ackDigest:old?.ackDigest||(first?source.digest:null),observedAt:new Date().toISOString()});}meta.sources=[...previous.values()];meta.sourceWarnings=(input.sourceWarnings||[]).slice(0,200).map(w=>({courseId:text(String(w.courseId||''),100),kind:['home','announcement','syllabus'].includes(w.kind)?w.kind:'home',message:text(w.message||'Course source could not be checked.',300)}));}
+      if(incoming){const first=!meta.sources,previous=new Map((meta.sources||[]).map(s=>[s.key,s]));for(const source of incoming){const old=previous.get(source.key);previous.set(source.key,mergeDocument(old,source,first));}meta.sources=[...previous.values()];meta.sourceWarnings=(input.sourceWarnings||[]).slice(0,200).map(w=>({courseId:text(String(w.courseId||''),100),kind:['home','announcement','syllabus'].includes(w.kind)?w.kind:'home',message:text(w.message||'Course source could not be checked.',300)}));}
     });
   }
   async lease(scope,force=false) {

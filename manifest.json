@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Canvas Companion",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "A native Canvas academic timetable with canonical backgrounds, classes, examinations, assignment references and projects.",
   "permissions": [
     "storage"
@@ -14,8 +14,14 @@
     "type": "module"
   },
   "action": {
-    "default_title": "Canvas Companion backgrounds",
-    "default_popup": "options.html"
+    "default_title": "Canvas Companion",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "src/assets/icon-16.png",
+      "32": "src/assets/icon-32.png",
+      "48": "src/assets/icon-48.png",
+      "128": "src/assets/icon-128.png"
+    }
   },
   "options_ui": {
     "page": "options.html",
@@ -49,7 +55,14 @@
         "src/background/glass.js",
         "src/academic/catalog.js",
         "src/academic/integration-ui.js",
-        "src/catalog/vinuni-fall-2026.json"
+        "src/catalog/vinuni-fall-2026.json",
+        "src/academic/review.js",
+        "src/ui/control-panel.js",
+        "options.html",
+        "src/ui/options.js",
+        "src/ui/options.css",
+        "src/assets/logo.svg",
+        "src/assets/avatar-fallback.svg"
       ],
       "matches": [
         "https://vinuni.instructure.com/*"
@@ -58,5 +71,11 @@
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none';"
+  },
+  "icons": {
+    "16": "src/assets/icon-16.png",
+    "32": "src/assets/icon-32.png",
+    "48": "src/assets/icon-48.png",
+    "128": "src/assets/icon-128.png"
   }
 }

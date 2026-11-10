@@ -1,0 +1,45 @@
+import {el,button} from '../academic/dom.js';
+import {CanvasReader} from '../academic/canvas.js';
+import {pendingSources} from '../academic/review.js';
+import {sourceDialog,catalogDialog} from '../academic/integration-ui.js';
+const css=`:host{font:14px/1.5 system-ui;color:var(--bctext-0,#eef3fa)}*{box-sizing:border-box}dialog{color:inherit;background:var(--cc-dialog-surface,#15243bf5);border:1px solid #b8dcff40;border-radius:22px;padding:0;width:min(850px,calc(100vw - 28px));height:min(800px,90vh);box-shadow:0 24px 90px #0008;backdrop-filter:blur(24px)}dialog::backdrop{background:#0008;backdrop-filter:blur(6px)}header{display:flex;align-items:center;gap:13px;padding:22px 24px;border-bottom:1px solid #b8dcff30}header img{width:45px;height:45px}h2,p{margin:0}h2{font-size:21px}header p{color:#bed0e4;font-size:12px}button,a{font:inherit;color:inherit;cursor:pointer}button{border:1px solid #b8dcff40;border-radius:10px;background:#a1dfff10;padding:9px 13px}button:hover,a:hover{background:#a1dfff24}.close{margin-left:auto;font-size:23px;padding:3px 12px}nav{display:flex;gap:7px;flex-wrap:wrap;padding:16px 24px}nav button[aria-selected=true]{background:#a5e3ff;color:#14243b;border-color:transparent;font-weight:700}.pane{padding:8px 24px 24px}.pane iframe{border:0;width:100%;height:520px;background:transparent}.intro{color:#bed0e4;margin-bottom:20px}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}.metric{border:1px solid #b8dcff30;background:#ffffff06;border-radius:14px;padding:18px}.metric strong{display:block;font-size:28px}.metric span{font-size:12px;color:#bed0e4}.actions{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0}.actions a{text-decoration:none;border:1px solid #b8dcff40;border-radius:10px;padding:9px 13px}.review{padding:14px;border:1px solid #ffaaa0;border-left:4px solid #ff8f86;background:#b62f3228;border-radius:12px;margin:15px 0}.review p{margin:5px 0 12px}.status{color:#bed0e4;font-size:12px;white-space:pre-line;line-height:1.7}a{color:#a5e3ff}.error{color:#ffb9b0}[hidden]{display:none!important}:focus-visible{outline:3px solid #a5e3ff;outline-offset:3px}@media(max-width:550px){header{padding:17px}nav{padding:12px 17px}.pane{padding:8px 17px 20px}.metrics{grid-template-columns:1fr;gap:8px}.metric{padding:12px;display:flex;align-items:center;gap:12px}.metric strong{font-size:23px}.pane iframe{height:60vh}}`;
+export class CompanionPanel{
+ constructor(document,{chrome:runtime=chrome,academic,snapshot=()=>null,optionsUrl=runtime.runtime.getURL('options.html')}={}){this.document=document;this.runtime=runtime;this.academic=academic;this.snapshot=snapshot;this.optionsUrl=optionsUrl;this.api=academic?.api||new CanvasReader();this.host=el('div',{id:'canvas-companion-control-panel'});this.root=this.host.attachShadow({mode:'open'});this.root.append(el('style',{},css));document.body.append(this.host);this.hash=null;this.route();}
+ route(){
+  const menu=this.document.querySelector('#menu');
+  if(menu&&!this.document.getElementById('canvas-companion-menu-item')){const icon=el('img',{src:this.runtime.runtime.getURL('src/assets/logo.svg'),alt:'',width:28,height:28}),control=button('',()=>void this.open(),'ic-app-header__menu-list-link',{'aria-label':'Canvas Companion'});control.style.cssText='width:100%;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;color:inherit;font:inherit';control.append(icon,el('span',{class:'menu-item__text'},'Companion'));menu.append(el('li',{id:'canvas-companion-menu-item',class:'ic-app-header__menu-list-item'},control));}
+  if(!this.host.isConnected)this.document.body.append(this.host);
+  const hash=location.hash;if(hash!==this.hash){this.hash=hash;if(['#canvas-companion-settings','#canvas-companion-review','#canvas-companion-catalog'].includes(hash))void this.open(hash.endsWith('review')?'review':hash.endsWith('catalog')?'catalog':'appearance');}
+ }
+ close(){this.dialog?.close();}
+ async destination(kind){
+  if(!this.academic.dashboard()){location.href=`/#canvas-companion-${kind}`;return;}
+  await this.academic.route();if(!this.academic.ui?.state)await this.academic.connect();
+  if(!this.academic.ui?.state)throw new Error('Connect to Canvas on the dashboard before opening academic sources.');
+  this.close();if(kind==='review')sourceDialog(this.academic.ui);else catalogDialog(this.academic.ui);
+ }
+ async open(tab='overview'){
+  if(this.dialog?.open){this.showTab(tab);return;}
+  const dialog=el('dialog',{'aria-labelledby':'cc-control-title'});this.dialog=dialog;
+  const heading=el('h2',{id:'cc-control-title'},'Canvas Companion'),header=el('header',{},el('img',{src:this.runtime.runtime.getURL('src/assets/logo.svg'),alt:''}),el('div',{},heading,el('p',{},'Your academic workspace, inside Canvas.')),button('×',()=>dialog.close(),'close',{'aria-label':'Close Canvas Companion'}));
+  const nav=el('nav',{role:'tablist','aria-label':'Companion sections'}),overview=el('section',{class:'pane',role:'tabpanel',id:'cc-overview'}),appearance=el('section',{class:'pane',role:'tabpanel',id:'cc-appearance',hidden:true});
+  const url=new URL(this.optionsUrl);url.searchParams.set('embedded','1');const transparent=this.document.documentElement.dataset.canvasCompanionSurface==='transparent';url.searchParams.set('theme',transparent?'dark':'auto');
+  const frame=el('iframe',{title:'Canvas Companion appearance settings',src:url.href});appearance.append(el('p',{class:'intro'},'Your existing background settings. Changes take effect when you choose Save.'),frame);
+  const tabs=new Map();for(const [id,label] of [['overview','Overview'],['appearance','Appearance']]){const b=button(label,()=>this.showTab(id),'',{'role':'tab','id':`cc-tab-${id}`,'aria-controls':`cc-${id}`,'aria-selected':id==='overview'});tabs.set(id,b);nav.append(b);}
+  overview.setAttribute('aria-labelledby','cc-tab-overview');appearance.setAttribute('aria-labelledby','cc-tab-appearance');
+  this.showTab=key=>{if(['review','catalog'].includes(key)){void this.destination(key).catch(e=>{this.status.textContent=e.message;});return;}for(const [id,b] of tabs){b.setAttribute('aria-selected',String(key===id));b.tabIndex=key===id?0:-1;}overview.hidden=key!=='overview';appearance.hidden=key!=='appearance';};
+  nav.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const next=e.key==='Home'?'overview':e.key==='End'?'appearance':overview.hidden?'overview':'appearance';this.showTab(next);tabs.get(next).focus();});
+  this.status=el('p',{class:'status',role:'status'},'Connecting to your saved academic workspace…');overview.append(el('p',{class:'intro'},'One place for your timetable, course-source reviews and background settings.'),el('div',{class:'actions'},el('a',{href:'/#canvas-companion-academic',onClick:()=>this.close()},'Open timetable'),button('Review course updates',()=>void this.destination('review').catch(e=>{this.status.textContent=e.message;})),button('Find class times',()=>void this.destination('catalog').catch(e=>{this.status.textContent=e.message;}))),this.status);
+  dialog.append(header,nav,overview,appearance);this.root.append(dialog);dialog.addEventListener('close',()=>{dialog.remove();if(this.dialog===dialog)this.dialog=null;});dialog.showModal();this.showTab(tab);
+  try{
+   const profile=await this.api.profile(),response=await this.runtime.runtime.sendMessage({namespace:'canvas-companion',action:'academic.read',scope:profile.scope});
+   if(!response?.ok)throw new Error(response?.error||'The saved timetable is unavailable.');if(!dialog.isConnected)return;
+   const state=response.data,pending=pendingSources(state.sources),metrics=el('div',{class:'metrics'});
+   for(const [count,label] of [[state.records.filter(r=>r.kind==='class').length,'Saved classes'],[state.records.filter(r=>r.kind==='exam').length,'Saved examinations'],[pending.length,'Sources to review']])metrics.append(el('div',{class:'metric'},el('strong',{},count),el('span',{},label)));
+   overview.insertBefore(metrics,this.status);
+   if(pending.length)overview.insertBefore(el('div',{class:'review',role:'status'},el('strong',{},`${pending.length} source update${pending.length===1?' needs':'s need'} review`),el('p',{},'Confirm changed dates, exams, rooms and cancellations before changing manual records.'),button('Review source changes',()=>void this.destination('review'))),this.status);
+   const bg=this.snapshot()?.record;this.status.textContent=`Canvas refresh: ${state.preferences.autoRefresh?'every 15 minutes while the dashboard is open':'manual'}\nLast successful snapshot: ${state.cache?.syncedAt?new Date(state.cache.syncedAt).toLocaleString():'not yet refreshed'}${bg?`\nBackground: ${bg.mode}; ${bg.appearance?.pages==='all'?'all Canvas pages':'dashboard'}`:''}\nYour personal records remain in this Chrome profile.`;
+  }catch(error){if(dialog.isConnected){this.status.textContent=error.message;this.status.classList.add('error');}}
+ }
+ destroy(){this.dialog?.close();this.host.remove();this.document.getElementById('canvas-companion-menu-item')?.remove();}
+}

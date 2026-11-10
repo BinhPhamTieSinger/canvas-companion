@@ -1,3 +1,4 @@
+const embedded=new URLSearchParams(location.search);if(embedded.get('embedded')==='1'){document.documentElement.dataset.embedded=embedded.get('theme')||'auto';}
 import { SCOPE, configuration, assetId, visual } from '../background/model.js';
 const $ = id => document.getElementById(id);
 const fields = ['fit', 'x', 'y', 'scale', 'brightness', 'blur', 'overlay', 'opacity', 'fallback'];
