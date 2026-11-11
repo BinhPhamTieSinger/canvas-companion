@@ -11,6 +11,7 @@ async function files(directory) {
 }
 const manifest = JSON.parse(await readFile('manifest.json', 'utf8'));
 assert.equal(manifest.manifest_version, 3);
+const boot=await readFile('src/content/boot.js','utf8');assert.equal(boot.match(/PACKAGE_VERSION='([^']+)'/)?.[1],manifest.version,'Bootstrap must match the packaged version.');
 assert.deepEqual(manifest.permissions, ['storage']);
 assert.deepEqual(manifest.host_permissions, ['https://vinuni.instructure.com/*']);
 for (const path of [manifest.background.service_worker, manifest.action.default_popup, ...manifest.content_scripts.flatMap(script => script.js), ...Object.values(manifest.icons), ...manifest.web_accessible_resources.flatMap(item => item.resources)]) await readFile(path);

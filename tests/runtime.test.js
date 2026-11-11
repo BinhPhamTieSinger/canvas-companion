@@ -1,3 +1,5 @@
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {runtimeAvailable,subscribeStorage,RELOAD_MESSAGE} from '../src/runtime.js';
@@ -10,3 +12,9 @@ test('academic controller stops cleanly when onChanged is unavailable at startup
 test('an update during profile validation prevents the stale tab from sending a mutation',async()=>{const r=chromeRuntime();let resolveProfile,calls=0;r.runtime.sendMessage=async()=>{calls++;return {ok:true,data:{}};};const controller=new AcademicController({}, {chrome:r,api:{profile:()=>new Promise(resolve=>{resolveProfile=resolve;})}});controller.profile={scope:'https://vinuni.instructure.com|123'};try{const pending=controller.rpc('save',{});r.storage=undefined;assert.doesNotThrow(()=>controller.destroy());resolveProfile({scope:'https://vinuni.instructure.com|123'});await assert.rejects(pending,error=>error.message===RELOAD_MESSAGE);assert.equal(calls,0);}finally{controller.destroy();}});
 test('late read responses after teardown cannot repaint a destroyed timetable',async()=>{const r=chromeRuntime();let resolveRead,paints=0;r.runtime.sendMessage=()=>new Promise(resolve=>{resolveRead=resolve;});const controller=new AcademicController({}, {chrome:r,api:{}});controller.profile={scope:'https://vinuni.instructure.com|123'};controller.ui={setState(){paints++;},destroy(){},message(){throw new Error('must not repaint');}};try{const pending=controller.refresh();controller.destroy();resolveRead({ok:true,data:{scope:'https://vinuni.instructure.com|123'}});await assert.doesNotReject(pending);assert.equal(paints,0);}finally{controller.destroy();}});
 test('focus events after teardown cannot restart Canvas requests',async()=>{let calls=0;const controller=new AcademicController({}, {chrome:chromeRuntime(),api:{profile(){calls++;}},dashboard:()=>true});controller.destroy();await controller.focus();await controller.connect();await controller.maybeSync();assert.equal(calls,0);});
+
+test('mixed-version bootstrap shows one update notice and never imports manifest-blocked modules',()=>{
+ let imports=0;const notices=[],document={body:{append(node){notices.push(node);}},getElementById(id){return notices.find(n=>n.id===id)||null;},createElement(){return {style:{},setAttribute(){}};}};
+ const chrome={runtime:{id:'old-version',getManifest:()=>({version:'0.5.0'}),getURL(){imports++;return 'chrome-extension://old-version/src/content/main.js';}},storage:{onChanged:{}}};
+ const source=readFileSync(new URL('../src/content/boot.js',import.meta.url),'utf8');vm.runInNewContext(source,{chrome,document});vm.runInNewContext(source,{chrome,document});assert.equal(imports,0);assert.equal(notices.length,1);assert.match(notices[0].textContent,/chrome:\/\/extensions/);
+});

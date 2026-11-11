@@ -12,3 +12,5 @@ await controller.connect();
 const snapshot={from:'2026-11-01',to:'2026-12-31',courses:[{id:'42',name:'Fixture mathematics',code:'MATH1010FAL26',color:'#80dec4'}],items:[],sources:[{key:'announcement:42',courseId:'42',kind:'announcement',title:'Sample examination room update',url:'https://vinuni.instructure.com/courses/42',digest:'a'.repeat(64),summary:'Sample midterm in Room A101.',signals:['examination','location']}]};
 await controller.rpc('sync',{snapshot});await controller.rpc('sync',{snapshot:{...snapshot,sources:[{...snapshot.sources[0],digest:'b'.repeat(64),summary:'Sample midterm moved to Room B204.'}]}});await controller.refresh();
 document.querySelector('#result').textContent=JSON.stringify({avatarPreserved:getComputedStyle(document.querySelector('#avatar-image')).backgroundImage.includes('avatar-fallback.svg'),lightText:getComputedStyle(document.querySelector('#dark-label')).color,logoutAction:document.querySelector('#sample-logout').closest('form').getAttribute('action'),logoutHeight:document.querySelector('#sample-logout').getBoundingClientRect().height});
+
+await import('./polish-suite.js').then(m=>m.run({panel,authored}));

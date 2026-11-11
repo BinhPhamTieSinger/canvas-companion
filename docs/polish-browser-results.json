@@ -1,0 +1,56 @@
+{
+  "results": [
+    {
+      "name": "course CSS images survive glass wrappers",
+      "passed": true
+    },
+    {
+      "name": "failed course image decodes the local course fallback",
+      "passed": true
+    },
+    {
+      "name": "failed avatar decodes its separate local fallback",
+      "passed": true
+    },
+    {
+      "name": "successful configured course image is retained",
+      "passed": true
+    },
+    {
+      "name": "light box has dark text with normal-text contrast",
+      "passed": true
+    },
+    {
+      "name": "light button has dark text with normal-text contrast",
+      "passed": true
+    },
+    {
+      "name": "dark surface has light text with normal-text contrast",
+      "passed": true
+    },
+    {
+      "name": "already readable dark text remains readable",
+      "passed": true
+    },
+    {
+      "name": "intentionally invisible text is not recolored",
+      "passed": true
+    },
+    {
+      "name": "logout styling preserves its form and target",
+      "passed": true
+    },
+    {
+      "name": "dark control panel keeps a readable heading",
+      "passed": true
+    },
+    {
+      "name": "light control panel pairs white surfaces with dark text and settings",
+      "passed": true
+    },
+    {
+      "name": "native dialogs never set aria-hidden on the document body",
+      "passed": true
+    }
+  ]
+}
