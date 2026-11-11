@@ -2,7 +2,7 @@
 
 A dependency-free Manifest V3 companion integrated into the VinUni Canvas dashboard. It preserves BetterCampus ownership of themes/course cards and adds canonical backgrounds and an academic timetable. This is an independent project, not an official or modified BetterCampus release.
 
-## Academic timetable — 0.5.0
+## Academic timetable — 0.5.1
 
 The approved ownership model uses one local record per manual class, examination, assignment or project. Six views project those records alongside read-only Canvas source references:
 
@@ -39,6 +39,12 @@ Custom HTTPS image URLs or local uploads support cover/contain, positioning, sca
 
 The companion cannot read another extension’s private storage. Ambiguous multiple-image vendor backgrounds are left alone. Course-card images and original layouts remain with their existing systems.
 
+## Contrast, course images and update handling
+
+Glass tints preserve Canvas course/portrait background images. Failed course image elements can show a local course icon without changing Canvas or stored customizations. Text contrast is evaluated against CSS surfaces: light boxes use dark text, and dark surfaces use light text when the existing color is unreadable. Code/editor content and intentionally hidden text are excluded.
+
+After reloading an unpacked extension, refresh all open Canvas tabs to replace their old extension contexts. Version 0.5.1 guards storage subscriptions and tears down old listeners/timers safely. See [patch details and console-warning diagnosis](docs/RELEASE-0.5.1.md).
+
 ## Install and verify
 
 See [installation and rollback](docs/INSTALL.md). Node 22 or newer is required for development checks; no dependency installation is needed.
@@ -50,7 +56,7 @@ npm run package
 npm run serve:test
 ```
 
-A fresh package is generated at `dist/canvas-companion-0.5.0`. When updating an existing unpacked installation, preserve its original folder path and extension identity. Do not uninstall or load a different path as an update. Keep Developer mode enabled for this unpacked installation.
+A fresh package is generated at `dist/canvas-companion-0.5.1`. When updating an existing unpacked installation, preserve its original folder path and extension identity. Do not uninstall or load a different path as an update. Keep Developer mode enabled for this unpacked installation.
 
 The [background audit](docs/AUDIT.md), [background architecture](docs/ARCHITECTURE.md), [historical live tests](docs/LIVE-VALIDATION.md), [current validation](docs/TIMETABLE-VALIDATION.md) and [roadmap](docs/ROADMAP.md) distinguish measured results from remaining limitations.
 

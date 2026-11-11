@@ -1,3 +1,4 @@
+import {runtimeAvailable,subscribeStorage,RELOAD_MESSAGE} from '../runtime.js';
 import { pendingSources } from './review.js';
 import { ORIGIN,isDashboard } from '../background/model.js';
 import { CanvasReader } from './canvas.js';
@@ -13,14 +14,18 @@ const STATUS={today:'Due today',soon:'Due soon',overdue:'Overdue',upcoming:'Upco
 const VIEWS=[['day','Day'],['week','Week'],['month','Month'],['exams','Exams'],['deadlines','Deadlines'],['overview','Overview']];
 export class AcademicController {
   constructor(document,{chrome:runtime=chrome,api=new CanvasReader(),clock=()=>Date.now(),dashboard=()=>isDashboard(location)}={}) {
-    this.document=document;this.chrome=runtime;this.api=api;this.clock=clock;this.dashboard=dashboard;this.profile=null;this.ui=null;this.connecting=null;this.destroyed=false;
+    this.document=document;this.chrome=runtime;this.api=api;this.clock=clock;this.dashboard=dashboard;this.profile=null;this.ui=null;this.connecting=null;this.destroyed=!runtimeAvailable(runtime);this.unsubscribe=()=>{};this.timer=null;
     this.listener=(changes,area)=>{if(area==='local'&&changes.academicRevision?.newValue?.scope===this.profile?.scope)void this.refresh();};
-    runtime.storage.onChanged.addListener(this.listener);
+    if(this.destroyed)return;this.unsubscribe=subscribeStorage(runtime,this.listener);
     this.timer=setInterval(()=>{if(this.ui&&!this.ui.hasEditor()){this.ui.render();void this.maybeSync();}},60000);
   }
+  active(){if(this.destroyed||!runtimeAvailable(this.chrome))throw new Error(RELOAD_MESSAGE);}
   async rpc(action,data={}) {
-    if(action!=='read'){const current=await this.api.profile();if(current.scope!==this.profile?.scope){await this.connect();throw new Error('Your Canvas account changed. Reopen the timetable before changing data.');}}
+    this.active();
+    if(action!=='read'){const current=await this.api.profile();this.active();if(current.scope!==this.profile?.scope){await this.connect();throw new Error('Your Canvas account changed. Reopen the timetable before changing data.');}}
+    this.active();
     const response=await this.chrome.runtime.sendMessage({namespace:'canvas-companion',action:`academic.${action}`,scope:this.profile?.scope,...data});
+    this.active();
     if(!response?.ok)throw new Error(response?.error||'The timetable is unavailable. Reload Canvas and try again.');return response.data;
   }
   async route() {
@@ -32,6 +37,7 @@ export class AcademicController {
     if(!this.profile&&!this.connecting)await this.connect();
   }
   async connect() {
+    if(this.destroyed)return;
     if(this.connecting)return this.connecting;
     this.ui?.message('Connecting to your Canvas account…');
     if(this.ui)this.ui.host.style.visibility='hidden';
@@ -42,16 +48,16 @@ export class AcademicController {
         if(this.profile?.scope!==profile.scope){this.ui?.reset();this.profile=profile;}
         await this.refresh();
       }catch(error){this.profile=null;this.ui?.reset();this.ui?.message(error.message,true);}
-      finally{this.connecting=null;if(this.ui)this.ui.host.style.visibility='';void this.maybeSync();}
+      finally{this.connecting=null;if(!this.destroyed){if(this.ui)this.ui.host.style.visibility='';void this.maybeSync();}}
     })();return this.connecting;
   }
-  async focus() { if(!this.dashboard())return; await this.connect();await this.maybeSync(); }
-  async maybeSync(){if(this.profile&&this.ui?.state?.preferences.autoRefresh&&!this.ui.busy&&!this.ui.hasEditor()&&Date.now()-(this.lastAttempt||0)>60000){this.lastAttempt=Date.now();await this.ui.sync(false);}}
+  async focus() { if(this.destroyed||!this.dashboard())return; await this.connect();await this.maybeSync(); }
+  async maybeSync(){if(!this.destroyed&&this.profile&&this.ui?.state?.preferences.autoRefresh&&!this.ui.busy&&!this.ui.hasEditor()&&Date.now()-(this.lastAttempt||0)>60000){this.lastAttempt=Date.now();await this.ui.sync(false);}}
   async refresh() {
-    if(!this.profile||!this.ui)return;
-    try {const state=await this.rpc('read');if(state.scope!==this.profile?.scope)return;this.ui.setState(state);}catch(error){this.ui.message(error.message,true);}
+    if(this.destroyed||!this.profile||!this.ui)return;
+    try {const state=await this.rpc('read');if(this.destroyed||state.scope!==this.profile?.scope)return;this.ui.setState(state);}catch(error){if(!this.destroyed)this.ui?.message(error.message,true);}
   }
-  destroy(){this.destroyed=true;this.chrome.storage?.onChanged?.removeListener(this.listener);clearInterval(this.timer);this.ui?.destroy();}
+  destroy(){if(this.destroyed)return;this.destroyed=true;this.unsubscribe();clearInterval(this.timer);this.ui?.destroy();this.ui=null;this.profile=null;}
 }
 export class AcademicWidget {
   constructor(anchor,controller) {

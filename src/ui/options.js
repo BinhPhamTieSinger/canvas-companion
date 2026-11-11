@@ -1,3 +1,4 @@
+import {runtimeAvailable,subscribeStorage,RELOAD_MESSAGE} from '../runtime.js';
 const embedded=new URLSearchParams(location.search);if(embedded.get('embedded')==='1'){document.documentElement.dataset.embedded=embedded.get('theme')||'auto';}
 import { SCOPE, configuration, assetId, visual } from '../background/model.js';
 const $ = id => document.getElementById(id);
@@ -6,6 +7,7 @@ let current, pendingUpload = null, selectedAsset = null, previewUrl = null, save
 let dirty = false, busy = false, selecting = 0, validatingUpload = false;
 function status(message, kind = 'info') { $('status').textContent = message; $('status').dataset.kind = kind; }
 async function rpc(action, data = {}) {
+  if(!runtimeAvailable(globalThis.chrome))throw new Error(RELOAD_MESSAGE);
   const response = await chrome.runtime.sendMessage({ namespace: 'canvas-companion', action, ...data });
   if (!response?.ok) throw new Error(response?.error || 'Canvas Companion is unavailable. Reload this settings page.');
   return response.data;
@@ -136,11 +138,11 @@ $('import').addEventListener('change', event => void withBusy(async () => {
   try { backup = JSON.parse(await file.text()); } catch { throw new Error('The backup is not valid JSON.'); }
   await rpc('import', { backup, revision: current.revision }); await load(); showSource(); status('Backup restored. Your previous companion choice is available through Undo.', 'success');
 }));
-chrome.storage.onChanged.addListener((changes, area) => {
+const unsubscribe=subscribeStorage(globalThis.chrome,(changes, area) => {
   if (area === 'local' && changes.backgroundRevision && !busy) {
     if (dirty) status('Saved settings changed in another window. Discard changes to reload before saving.', 'error');
     else void load().then(showSource).catch(error => status(error.message, 'error'));
   }
 });
-window.addEventListener('pagehide', release);
+window.addEventListener('pagehide',event=>{if(!event.persisted){unsubscribe();release();}});
 void load().then(showSource).catch(error => status(error.message, 'error'));
