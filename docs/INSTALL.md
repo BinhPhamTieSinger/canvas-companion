@@ -1,6 +1,6 @@
 # Local trial and rollback
 
-The 0.3.0 build includes the approved companion-owned academic timetable. See [current verification](TIMETABLE-VALIDATION.md) and the [historical background live checks](LIVE-VALIDATION.md). This does not certify every theme/layout or future Canvas change.
+The 0.6.0 build includes the companion-owned timetable, catalog browser and semester planner. See [current verification](TIMETABLE-VALIDATION.md) and the [historical background live checks](LIVE-VALIDATION.md). This does not certify every theme/layout or future Canvas change.
 
 ## Build
 
@@ -12,7 +12,7 @@ npm run check
 npm run package
 ```
 
-No dependency installation is needed. For a new installation the unpacked folder is `dist/canvas-companion-0.3.0`; a ZIP and SHA-256 checksum are also generated in `dist`.
+No dependency installation is needed. For a new installation the unpacked folder is `dist/canvas-companion-0.6.0`; a ZIP and SHA-256 checksum are also generated in `dist`.
 
 ## Load in Chrome
 
@@ -30,7 +30,7 @@ First export a backup of any companion background already saved. Original Better
 
 - With the affected BetterCampus image active, compare compatibility mode versus **Leave BetterCampus unchanged**. Check the existing theme, cards and layout.
 - Select **Choose my own image**, upload a test image, preview, and save. Change its fit/position/filter, save, then refresh.
-- Verify another dashboard tab updates. Open a course page and return; the companion layer must be absent on course pages.
+- Verify another dashboard tab updates. Open a course page and return; the companion layer follows the saved Dashboard-only or All Canvas pages setting.
 - Switch BetterCampus themes and light/dark modes. Verify the intended custom choice remains and there is still one companion image layer.
 - Remove the companion background, verify original rendering returns, then use Undo.
 - Export and restore a companion backup. Keep the file private.

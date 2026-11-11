@@ -2,7 +2,7 @@
 
 A dependency-free Manifest V3 companion integrated into the VinUni Canvas dashboard. It preserves BetterCampus ownership of themes/course cards and adds canonical backgrounds and an academic timetable. This is an independent project, not an official or modified BetterCampus release.
 
-## Academic timetable — 0.5.1
+## Academic timetable — 0.6.0
 
 The approved ownership model uses one local record per manual class, examination, assignment or project. Six views project those records alongside read-only Canvas source references:
 
@@ -20,9 +20,17 @@ See [how to use the timetable](docs/TIMETABLE.md), [data architecture](docs/TIME
 
 ## In-Canvas Companion panel
 
-Open **Companion** in Canvas's sidebar for workspace counts, review actions and the **Appearance** tab. The tab reuses your existing background settings. The toolbar popup opens this panel; **Try the sample workspace** explores the actual timetable and review UI with fictional, temporary data and no university credentials.
+Open **Companion** in Canvas's sidebar for **Overview**, **Courses**, **Semester Planner** and **Appearance** tabs. The tab reuses your existing background settings. The toolbar popup opens this panel; **Try the sample workspace** explores the actual timetable and review UI with fictional, temporary data and no university credentials.
 
 New/edited sources receive a persistent red review banner. Topic hints, prior excerpts and original links help you review possible examination, timetable, room and deadline information. Use **Edit** to change an existing record or **Add** to draft a new one; missing dates stay blank. See [0.5.0 verification and limits](docs/RELEASE-0.5.0.md).
+
+## Course catalog and future semesters
+
+**Companion → Courses** browses all 389 sections (222 course codes), with search, department/schedule filters, exact published teaching dates and catalog download. Portal sign-in is not required.
+
+Choose a target semester and **Plan course**, then open **Semester Planner**. Save a shortlist per semester, enter credits and notes from official sources, and optionally draft weekly lecture/lab/recitation times and rooms. The weekly preview warns about overlapping proposed meetings. Saved plans reopen after refresh and are included in the existing academic backup. Drafts survive tab/semester switching while the panel stays open; save each semester before closing. Unsaved drafts are not persisted across a page refresh.
+
+The bundled snapshot is Fall 2026, not a future offering list. Historical meeting times are never copied into a future schedule. Credits, prerequisites, target-semester availability and registration are not inferred. Plans reference catalog courses and stay separate from active timetable records. See [0.6.0 architecture and verification](docs/RELEASE-0.6.0.md).
 
 ## Shared catalog and course-source updates
 
@@ -56,7 +64,7 @@ npm run package
 npm run serve:test
 ```
 
-A fresh package is generated at `dist/canvas-companion-0.5.1`. When updating an existing unpacked installation, preserve its original folder path and extension identity. Do not uninstall or load a different path as an update. Keep Developer mode enabled for this unpacked installation.
+A fresh package is generated at `dist/canvas-companion-0.6.0`. When updating an existing unpacked installation, preserve its original folder path and extension identity. Do not uninstall or load a different path as an update. Keep Developer mode enabled for this unpacked installation.
 
 The [background audit](docs/AUDIT.md), [background architecture](docs/ARCHITECTURE.md), [historical live tests](docs/LIVE-VALIDATION.md), [current validation](docs/TIMETABLE-VALIDATION.md) and [roadmap](docs/ROADMAP.md) distinguish measured results from remaining limitations.
 

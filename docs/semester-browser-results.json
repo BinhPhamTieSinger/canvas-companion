@@ -1,0 +1,60 @@
+{
+  "results": [
+    {
+      "name": "catalog tab shows all 389 sections with paginated rendering",
+      "passed": true
+    },
+    {
+      "name": "catalog search and empty states work without portal authentication",
+      "passed": true
+    },
+    {
+      "name": "planning a course opens the planner without copying past meeting times",
+      "passed": true
+    },
+    {
+      "name": "the same course cannot be added once per historical section",
+      "passed": true
+    },
+    {
+      "name": "manual credits, recitation and proposed overlaps appear in the preview",
+      "passed": true
+    },
+    {
+      "name": "semester plan save persists one canonical record",
+      "passed": true
+    },
+    {
+      "name": "conflicting tab saves are rejected instead of overwriting another edit",
+      "passed": true
+    },
+    {
+      "name": "semester selection retains drafts separately and does not create active classes",
+      "passed": true
+    },
+    {
+      "name": "unsaved drafts require an explicit discard before closing",
+      "passed": true
+    },
+    {
+      "name": "multiple semesters save independently and the UI confirms deletion",
+      "passed": true
+    },
+    {
+      "name": "academic backup restores semester plans idempotently to the same account",
+      "passed": true
+    },
+    {
+      "name": "delete, undo, and recreating a semester keep one canonical identity",
+      "passed": true
+    },
+    {
+      "name": "tab keyboard navigation covers all four sections and retains accessibility labels",
+      "passed": true
+    },
+    {
+      "name": "saved plan survives an actual browser page refresh",
+      "passed": true
+    }
+  ]
+}

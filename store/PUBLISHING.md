@@ -12,6 +12,8 @@ Store approval and public availability are separate from uploading a draft or su
 
 The user reported submitting version 0.5.0 for Chrome Web Store review. Version 0.5.1 contains subsequent course-image, contrast and runtime-invalidation fixes and is packaged separately. Preparing this patch does not update or cancel the submitted store version. Its package is `dist/canvas-companion-0.5.1.zip`.
 
+Version 0.6.0 additionally packages the Courses tab and semester planner at `dist/canvas-companion-0.6.0.zip`. It is a local/GitHub update; no change to the pending store submission is implied. New semester-plan records require 0.6.0 or newer for backup restoration.
+
 ## Existing unpacked installations
 
 A store-created extension has its own extension ID and storage. Preserve the existing unpacked installation and export BOTH academic and background backups first. Disable the unpacked companion before enabling the store version, so two companions do not compete to render the same page. Import the exported backups into the store installation using the same Canvas account. Keep the disabled unpacked installation as a rollback until the restored settings are verified. Do not uninstall or remove profile storage as part of migration.

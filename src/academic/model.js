@@ -1,7 +1,8 @@
 import { ORIGIN } from '../background/model.js';
 import { validZone, validDate, validTime, zonedInstant, dateIn } from './time.js';
+import {validatePlan} from './semester-plan.js';
 export const DEFAULT_PREFS = Object.freeze({ timezone:'Asia/Ho_Chi_Minh', travelMinutes:15, dueSoonHours:72, clusterDays:3, clusterCount:3, view:'week', showCompleted:false, collapsed:false, courseFilter:'',autoRefresh:false });
-export const KINDS = new Set(['class','exam','assignment','project','annotation','course','event','office_hours']);
+export const KINDS = new Set(['class','exam','assignment','project','annotation','course','event','office_hours','semester_plan']);
 export const PRIORITIES = ['low','normal','high'];
 export const PREPARATION = ['not_started','preparing','ready'];
 export const SUBMISSION = ['not_submitted','submitted','returned'];
@@ -26,6 +27,7 @@ export function preferences(value={}) {
 export function validateRecord(input) {
   if(!validScope(input?.scope)||!KINDS.has(input.kind)) throw new Error('Unsupported academic account or record type.');
   const base={ scope:input.scope, id:id(input.id), kind:input.kind };
+  if(input.kind==='semester_plan')return validatePlan(input);
   const d=input.data || {};
   if(input.kind==='annotation') {
     return {...base,data:{ sourceKey:required(d.sourceKey,'Source identity',250), completed:Boolean(d.completed), priority:choice(d.priority,PRIORITIES,'normal'), estimatedMinutes:integer(d.estimatedMinutes,0,10000,0), notes:text(d.notes??'') }};

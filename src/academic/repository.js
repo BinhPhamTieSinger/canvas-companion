@@ -35,8 +35,9 @@ export class AcademicRepository {
     return this.change(clean.scope,async(tx)=>{
       const store=tx.objectStore('academicRecords'),old=await request(store.get(key));
       if(clean.kind==='assignment'){const source=assignmentKeyFromLink(clean.data.url);if(source)throw new Error('Refresh Canvas and use the assignment’s Personal details instead of making a second assignment.');}
-      if((old?.revision||0)!==revision||!Number.isSafeInteger(revision)) throw conflict();
-      store.put({...clean,key,revision:revision+1,updatedAt:new Date().toISOString(),deleted:false});
+      const recreatingPlan=clean.kind==='semester_plan'&&old?.deleted&&revision===0;
+      if((!recreatingPlan&&(old?.revision||0)!==revision)||!Number.isSafeInteger(revision)) throw conflict();
+      store.put({...clean,key,revision:(old?.revision||0)+1,updatedAt:new Date().toISOString(),deleted:false});
     });
   }
   async remove(scope,kind,id,revision) {

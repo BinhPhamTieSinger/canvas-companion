@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Canvas Companion",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "A native Canvas academic timetable with canonical backgrounds, classes, examinations, assignment references and projects.",
   "permissions": [
     "storage"
@@ -65,7 +65,9 @@
         "src/assets/avatar-fallback.svg",
         "src/background/contrast.js",
         "src/assets/course-fallback.svg",
-        "src/runtime.js"
+        "src/runtime.js",
+        "src/academic/semester-plan.js",
+        "src/ui/course-workspace.js"
       ],
       "matches": [
         "https://vinuni.instructure.com/*"
