@@ -27,6 +27,8 @@ export function openEditor(root,{record,kind=record?.kind,state,event,onSave,onD
   if(kind==='preferences') {
     const p=state.preferences||DEFAULT_PREFS;
     field('timezone','Campus timezone (IANA)','text',p.timezone,{required:true,placeholder:'Asia/Ho_Chi_Minh'});
+    field('weekOneDate','Teaching week 1 starts on (Monday, optional)','date',p.weekOneDate||'');
+    form.append(el('p',{class:'hint'},'Enter the verified first teaching Monday to show teaching-week numbers. Otherwise the timetable shows ISO calendar weeks. This does not change meeting dates.'));
     field('travelMinutes','Minimum time between classes (minutes)','number',p.travelMinutes,{min:0,max:180});
     field('dueSoonHours','Due-soon window (hours)','number',p.dueSoonHours,{min:1,max:336});
     field('clusterDays','Concentrated-deadline window (days)','number',p.clusterDays,{min:1,max:14});

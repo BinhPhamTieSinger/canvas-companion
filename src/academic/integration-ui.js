@@ -23,7 +23,7 @@ export async function catalogDialog(widget){
 export function sourceDialog(widget){
  const state=widget.state,sources=state.sources||[],dialog=el('dialog',{class:'editor','aria-label':'Course source updates'}),body=el('div',{class:'source-review',style:'padding:22px'});
  const pending=pendingSources(sources);
- body.append(el('h2',{},'Course source updates'),el('p',{class:'hint'},'A changed document needs your review. Topic labels are keyword hints, not verified changes to an exam, date or room. Structured Canvas deadlines update directly; manual schedules change only when you save an edit. External Simple Syllabus embeds require a supported export.'));
+ body.append(el('h2',{},'Course source updates'),el('p',{class:'hint'},'New or changed course sources need your review. Topic labels are keyword hints, not verified changes to an exam, date or room. Structured Canvas deadlines update directly; manual schedules change only when you save an edit. External Simple Syllabus embeds require a supported export.'));
  if(pending.length)body.append(el('div',{class:'review-notice',role:'status'},el('strong',{},`${pending.length} source update${pending.length===1?' needs':'s need'} review`),el('p',{},'Open the original, confirm which section it concerns, then update an existing item or add one. Mark reviewed when finished.')));
  for(const warning of state.sourceWarnings||[])body.append(el('p',{class:'error'},warning.message));
  const search=el('input',{type:'search',placeholder:'Filter by course or source title','aria-label':'Filter course sources'}),only=el('input',{type:'checkbox',checked:pending.length>0,'aria-label':'Only sources needing review'}),list=el('div');
@@ -34,7 +34,8 @@ export function sourceDialog(widget){
    const name=courses.get(s.courseId)||'',changed=s.digest!==s.ackDigest;
    if((only.checked&&!changed)||(term&&!`${name} ${s.title}`.toLowerCase().includes(term)))continue;
    count++;const text=el('div',{class:'event-main'},el('strong',{},`${changed?'Needs review · ':''}${s.title}`),el('p',{class:'hint'},`${name} · ${s.kind}${s.sections?.length?' · '+s.sections.join(', '):''}`));
-   if(changed)text.append(el('p',{class:'review-label'},s.changeKind==='new'?'New source since your baseline':'Source edited since your last review'));
+   if(changed)text.append(el('p',{class:'review-label'},s.changeKind==='new'?'New or initially unreviewed announcement/source':'Source edited since your last review'));
+   if(s.postedAt)text.append(el('p',{class:'hint'},`Posted ${new Date(s.postedAt).toLocaleString()}`));
    if(s.signals?.length)text.append(el('p',{class:'hint'},s.signals.map(key=>SIGNALS[key]).filter(Boolean).join(' · ')));
    text.append(el('p',{class:'hint'},s.summary),el('a',{href:s.url,target:'_blank',rel:'noopener noreferrer'},'Open original source'));
    if(changed&&s.previousSummary)text.append(el('details',{},el('summary',{},'Previous saved excerpt'),el('p',{class:'hint'},s.previousSummary),el('p',{class:'hint'},s.previousSummary===s.summary?'The digest changed outside the saved excerpt or in formatting. Open the original to review.':'Excerpts provide context; confirm the actual change in the original.')));

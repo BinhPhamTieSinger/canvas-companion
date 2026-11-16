@@ -1,10 +1,10 @@
 import {runtimeAvailable,subscribeStorage,RELOAD_MESSAGE} from '../runtime.js';
-import { pendingSources } from './review.js';
+import { pendingSources,sourceHealth } from './review.js';
 import { ORIGIN,isDashboard } from '../background/model.js';
 import { CanvasReader } from './canvas.js';
 import { validateRecord,annotationId } from './model.js';
 import { projectEvents,visibleEvents,warnings,deadlineStatus,countdown } from './engine.js';
-import { dateIn,timeIn,addDays,windowFor,labelDate,minuteOfDay } from './time.js';
+import { dateIn,timeIn,addDays,windowFor,labelDate,minuteOfDay,weekLabel } from './time.js';
 import { el,button } from './dom.js';
 import { openEditor } from './forms.js';
 import { catalogDialog,sourceDialog } from './integration-ui.js';
@@ -176,6 +176,7 @@ export class AcademicWidget {
     const grid=el('div',{class:'month'});for(const day of ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'])grid.append(el('div',{class:'weekday'},day));
     for(let date=from;date<=to;date=addDays(date,1)){
       const target=date,day=events.filter(e=>e.date===date),cell=el('section',{class:`month-cell ${date.slice(0,7)!==this.date.slice(0,7)?'outside':''} ${date===dateIn(this.controller.clock(),this.state.preferences.timezone)?'today':''}`});
+      if(new Date(`${date}T12:00:00Z`).getUTCDay()===1)cell.append(el('span',{class:'week-number'},weekLabel(date,this.state.preferences.weekOneDate)));
       cell.append(button(labelDate(date),()=>{this.date=target;this.view='day';this.render();},'date-button'));
       for(const event of day.slice(0,4))cell.append(this.eventCard(event,{compact:true}));
       if(day.length>4)cell.append(button(`+${day.length-4} more`,()=>{this.date=target;this.view='day';this.render();},'text-button'));grid.append(cell);
@@ -188,12 +189,13 @@ export class AcademicWidget {
   render() {
     const top=el('div',{class:'top'},el('div',{},el('p',{class:'eyebrow'},'CANVAS COMPANION'),el('h2',{},'Academic timetable')));
     if(!this.state){top.append(button('Retry connection',()=>this.controller.connect()));this.panel.replaceChildren(top,el('p',{class:`status ${this.error?'error':''}`,role:'status'},this.notice||'Connecting to Canvas…'));return;}
-    const state=this.state,p=state.preferences,range=windowFor(this.view,this.date),now=this.controller.clock();
+    const state=this.state,p=state.preferences,range=windowFor(this.view,this.date),now=this.controller.clock(),health=sourceHealth(state,now);
     const addKind=el('select',{'aria-label':'Record type'},...['class','exam','assignment','project','event','office_hours','course'].map(kind=>el('option',{value:kind},kind==='course'?'Manual course':TITLES[kind])));
     top.append(el('div',{class:'top-actions'},addKind,button('Add',()=>this.edit(addKind.value),'primary',{disabled:this.busy}),button('Refresh Canvas',()=>this.sync(),'secondary',{disabled:this.busy}),button('Find class times',()=>catalogDialog(this),'secondary',{disabled:this.busy}),button(`Source updates${(this.state.sources||[]).some(s=>s.digest!==s.ackDigest)?' · '+this.state.sources.filter(s=>s.digest!==s.ackDigest).length:''}`,()=>sourceDialog(this),pendingSources(state.sources).length?'review-button':'secondary'),button(this.collapsed?'Expand':'Collapse',()=>this.savePreferences({collapsed:!this.collapsed}),'icon',{'aria-expanded':!this.collapsed})));
     const pending=pendingSources(state.sources),review=pending.length?el('div',{class:'review-notice',role:'status'},el('strong',{},`${pending.length} course source update${pending.length===1?' needs':'s need'} review`),el('p',{},'A Home page, syllabus or announcement changed. Confirm dates, exams, rooms and cancellations before changing your timetable.'),button('Review source changes',()=>sourceDialog(this),'review-button')):null;
-    if(this.collapsed){this.panel.replaceChildren(top,...(review?[review]:[]));return;}
-    const toolbar=el('div',{class:'toolbar'},el('nav',{class:'views','aria-label':'Timetable views'},...VIEWS.map(([id,label])=>button(label,()=>this.savePreferences({view:id}),'secondary',{'aria-pressed':this.view===id}))),el('div',{class:'nav'},button('‹',()=>this.navigate(-1),'secondary',{'aria-label':'Previous period'}),el('span',{class:'period'},`${labelDate(range.from)}${range.from===range.to?'':' – '+labelDate(range.to)}`),button('Today',()=>{this.date=dateIn(now,p.timezone);this.render();}),button('›',()=>this.navigate(1),'secondary',{'aria-label':'Next period'})));
+    const healthNotice=health.stale||health.partial?el('div',{class:'review-notice source-health',role:'status'},el('strong',{},health.partial?'Some course sources could not be checked':'Course updates have not been checked recently'),el('p',{},`${health.lastCheckedAt?'Last check: '+new Date(health.lastCheckedAt).toLocaleString()+'. ':'No course-source baseline yet. '}${health.autoRefresh?'New announcements may be missing until the next successful refresh.':'Automatic refresh is off; new announcements may be missing.'}${health.partial?' Open Source updates for coverage errors.':''}`),button('Check course updates now',()=>this.sync(),'review-button',{disabled:this.busy})):null;
+    if(this.collapsed){this.panel.replaceChildren(top,...[review,healthNotice].filter(Boolean));return;}
+    const toolbar=el('div',{class:'toolbar'},el('nav',{class:'views','aria-label':'Timetable views'},...VIEWS.map(([id,label])=>button(label,()=>this.savePreferences({view:id}),'secondary',{'aria-pressed':this.view===id}))),el('div',{class:'nav'},button('‹',()=>this.navigate(-1),'secondary',{'aria-label':'Previous period'}),el('span',{class:'period'},el('span',{},`${labelDate(range.from)}${range.from===range.to?'':' – '+labelDate(range.to)}`),el('small',{class:'week-number'},['month','exams','deadlines'].includes(this.view)?'Week numbers in Monday cells':weekLabel(this.date,p.weekOneDate))),button('Today',()=>{this.date=dateIn(now,p.timezone);this.render();}),button('›',()=>this.navigate(1),'secondary',{'aria-label':'Next period'})));
     const courses=[...(state.cache?.courses||[]),...state.records.filter(r=>r.kind==='course').map(r=>({id:r.id,name:r.data.title}))];
     const course=el('select',{'aria-label':'Filter course'},el('option',{value:''},'All courses'),...courses.map(c=>el('option',{value:c.id},c.name)));course.value=this.filter;course.addEventListener('change',()=>this.savePreferences({courseFilter:course.value}));
     const completed=el('input',{type:'checkbox',checked:this.showCompleted});completed.addEventListener('change',()=>this.savePreferences({showCompleted:completed.checked}));
@@ -221,7 +223,7 @@ export class AcademicWidget {
     const importInput=el('input',{type:'file',accept:'.json,application/json',hidden:true});
     importInput.addEventListener('change',async()=>{try{const file=importInput.files[0];if(!file)return;if(file.size>12*1024*1024)throw new Error('Choose a backup smaller than 12 MB.');await this.mutate('import',{backup:JSON.parse(await file.text()),revision:this.state.revision},'Missing academic records restored. Existing records and preferences were preserved.');}catch(error){this.message(error.message,true);}});
     const bottom=el('div',{class:'bottom'},button('Preferences',()=>this.edit('preferences'),'text-button'),button('Export academic backup',async()=>{try{const backup=await this.controller.rpc('export');const url=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}));const link=el('a',{href:url,download:'canvas-companion-academic.json'});link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(error){this.message(error.message,true);}},'text-button'),button('Import missing records',()=>importInput.click(),'text-button'),button('Undo delete',async()=>{try{await this.mutate('undo',{revision:this.state.revision},'Deleted item restored.');}catch{}},'text-button',{disabled:!state.undo}),importInput,el('span',{},'Manual changes stay local. Canvas sources are read only.'));
-    this.panel.replaceChildren(top,...(review?[review]:[]),toolbar,filters,legend,status,content,bottom);
+    this.panel.replaceChildren(top,...[review,healthNotice].filter(Boolean),toolbar,filters,legend,status,content,bottom);
     const probe=el('span',{style:'position:absolute;visibility:hidden;color:var(--accent)'},'');this.root.append(probe);
     const match=getComputedStyle(probe).color.match(/rgba?\((\d+)[, ]+(\d+)[, ]+(\d+)/);probe.remove();
     if(match){const rgb=match.slice(1).map(Number).map(n=>{const x=n/255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;});const luminance=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];this.host.style.setProperty('--accent-ink',luminance>.179?'#111111':'#ffffff');}

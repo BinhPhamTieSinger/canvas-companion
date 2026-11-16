@@ -4,13 +4,13 @@ import { scopeFor } from './model.js';
 import { validDate, validZone } from './time.js';
 const ALLOWED = new Set(['/api/v1/users/self/profile','/api/v1/users/self/colors','/api/v1/courses','/api/v1/planner/items','/api/v1/calendar_events','/api/v1/announcements']);
 export function sourceLink(value) { try {const u=new URL(value,ORIGIN);return u.origin===ORIGIN?`${u.origin}${u.pathname}${u.hash}`:'';}catch{return '';} }
-export function plainText(value) {
+export function plainText(value,limit=5000) {
   const named={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:' '};
   return String(value??'').replace(/<[^>]*>/g,' ').replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi,(_all,key)=>{
     if(key[0]!=='#')return named[key.toLowerCase()]||' ';
     const n=key[1].toLowerCase()==='x'?parseInt(key.slice(2),16):parseInt(key.slice(1),10);
     return n>0&&n<=0x10ffff?String.fromCodePoint(n):' ';
-  }).replace(/\s+/g,' ').trim().slice(0,5000);
+  }).replace(/\s+/g,' ').trim().slice(0,limit);
 }
 function stamp(value) { return typeof value==='string'&&/T.*(?:Z|[+-]\d{2}:\d{2})$/.test(value)&&Number.isFinite(Date.parse(value))?new Date(value).toISOString():null; }
 function taskIdentity(course,id) { return `${ORIGIN}|assignment:${id}`; }
@@ -79,7 +79,7 @@ export class CanvasReader {
       if(course.syllabus_body!=null)sources.push(await documentSource({key:`syllabus:${id}`,courseId:id,kind:'syllabus',title:'Canvas syllabus',url:`${ORIGIN}/courses/${id}/assignments/syllabus`,body:course.syllabus_body}));
       try{const {data}=await this.response(`/api/v1/courses/${id}/front_page`);sources.push(await documentSource({key:`home:${id}`,courseId:id,kind:'home',title:data.title||'Course home',url:sourceLink(data.html_url||`/courses/${id}`),body:data.body||''}));}
       catch(error){if(error.status!==404)sourceWarnings.push({courseId:id,kind:'home',message:'Course home could not be checked; previous source state is preserved.'});}
-      try{const rows=await this.pages(`/api/v1/announcements?context_codes[]=course_${id}&start_date=${start}&end_date=${end}&include[]=sections&per_page=100`);for(const a of rows)sources.push(await documentSource({key:`announcement:${a.id}`,courseId:id,kind:'announcement',title:a.title||'Announcement',url:sourceLink(a.html_url||`/courses/${id}/discussion_topics/${a.id}`),body:a.message||'',sections:(a.sections||[]).map(s=>plainText(s.name))}));}
+      try{const rows=await this.pages(`/api/v1/announcements?context_codes[]=course_${id}&start_date=${start}&end_date=${end}&include[]=sections&per_page=100`);for(const a of rows)sources.push(await documentSource({key:`announcement:${a.id}`,courseId:id,kind:'announcement',title:a.title||'Announcement',url:sourceLink(a.html_url||`/courses/${id}/discussion_topics/${a.id}`),body:a.message||'',postedAt:stamp(a.posted_at||a.delayed_post_at||a.created_at),editedAt:stamp(a.updated_at),sections:(a.sections||[]).map(s=>plainText(s.name))}));}
       catch{sourceWarnings.push({courseId:id,kind:'announcement',message:'Announcements could not be checked; previous source state is preserved.'});}
     }
     return {sources,sourceWarnings};
@@ -103,6 +103,7 @@ export class CanvasReader {
 export async function documentSource({body,...source}) {
   const bytes=new TextEncoder().encode(`${source.title}\n${body}`);
   const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');
-  const summary=plainText(body).split(/Student Name|Student ID|Room list for each student/i)[0].slice(0,900);
-  return {...source,digest,summary,signals:sourceSignals(`${source.title} ${plainText(body)}`)};
+  const content=plainText(body,Infinity);
+  const summary=content.split(/Student Name|Student ID|Room list for each student/i)[0].slice(0,900);
+  return {...source,digest,summary,signals:sourceSignals(`${source.title} ${content}`)};
 }

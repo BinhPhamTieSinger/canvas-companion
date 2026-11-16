@@ -1,0 +1,40 @@
+{
+  "results": [
+    {
+      "name": "week view shows ISO week and a red stale-source notice with refresh off",
+      "passed": true
+    },
+    {
+      "name": "a first relevant lab announcement creates a red review banner after refresh",
+      "passed": true
+    },
+    {
+      "name": "source review displays the lab hint and original source without auto-acknowledging",
+      "passed": true
+    },
+    {
+      "name": "teaching-week preference persists and weekly navigation advances the label",
+      "passed": true
+    },
+    {
+      "name": "monthly Monday cells expose week numbers without changing their teaching dates",
+      "passed": true
+    },
+    {
+      "name": "verified lab correction appears on its existing class and keeps the prior cancellation",
+      "passed": true
+    },
+    {
+      "name": "partial source failures remain a red warning even after a recent successful snapshot",
+      "passed": true
+    },
+    {
+      "name": "explicit review acknowledgement clears only that digest and leaves the lab intact",
+      "passed": true
+    },
+    {
+      "name": "collapsed timetable retains source-coverage warnings",
+      "passed": true
+    }
+  ]
+}

@@ -19,3 +19,7 @@ Version 0.6.0 additionally packages the Courses tab and semester planner at `dis
 A store-created extension has its own extension ID and storage. Preserve the existing unpacked installation and export BOTH academic and background backups first. Disable the unpacked companion before enabling the store version, so two companions do not compete to render the same page. Import the exported backups into the store installation using the same Canvas account. Keep the disabled unpacked installation as a rollback until the restored settings are verified. Do not uninstall or remove profile storage as part of migration.
 
 The store build and the development build share the same validated backup formats. Academic imports merge missing records without overwriting newer records. Uploaded background bytes remain content-addressed and validated. The currently configured local extension keeps its original folder and ID; publishing does not itself move that local data to a new store ID.
+
+## Week and review-status patch
+
+Version 0.6.1 adds week numbering and source-monitoring warnings, packaged at `dist/canvas-companion-0.6.1.zip`. The original local extension path/ID and pending store submission are preserved.

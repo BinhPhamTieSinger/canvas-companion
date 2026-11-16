@@ -18,6 +18,18 @@ export function addDays(value, count) { const date = new Date(`${value}T12:00:00
 export function daysBetween(a, b) { return Math.round((Date.parse(`${b}T12:00:00Z`)-Date.parse(`${a}T12:00:00Z`))/86400000); }
 export function weekday(value) { return new Date(`${value}T12:00:00Z`).getUTCDay() || 7; }
 export function monday(value) { return addDays(value, 1-weekday(value)); }
+export function isoWeek(value) {
+  if(!validDate(value))throw new Error('Choose a valid week date.');
+  const thursday=addDays(monday(value),3),year=Number(thursday.slice(0,4));
+  return {year,week:1+Math.round(daysBetween(monday(`${year}-01-04`),monday(value))/7)};
+}
+export function weekLabel(value,weekOneDate='') {
+  const iso=isoWeek(value),calendar=`ISO week ${iso.week} (${iso.year})`;
+  if(!weekOneDate)return calendar;
+  if(!validDate(weekOneDate)||weekday(weekOneDate)!==1)throw new Error('Teaching week 1 must start on a Monday.');
+  const teaching=1+Math.floor(daysBetween(weekOneDate,monday(value))/7);
+  return `${teaching>0?'Teaching week '+teaching:'Before teaching week 1'} · ${calendar}`;
+}
 export function minuteOfDay(value) { const [h,m] = value.split(':').map(Number); return h*60+m; }
 export function zonedInstant(date, time, zone) {
   if (!validDate(date) || !validTime(time) || !validZone(zone)) throw new Error('Choose a valid date, time and timezone.');

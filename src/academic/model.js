@@ -1,7 +1,7 @@
 import { ORIGIN } from '../background/model.js';
-import { validZone, validDate, validTime, zonedInstant, dateIn } from './time.js';
+import { validZone, validDate, validTime, zonedInstant, dateIn,weekday } from './time.js';
 import {validatePlan} from './semester-plan.js';
-export const DEFAULT_PREFS = Object.freeze({ timezone:'Asia/Ho_Chi_Minh', travelMinutes:15, dueSoonHours:72, clusterDays:3, clusterCount:3, view:'week', showCompleted:false, collapsed:false, courseFilter:'',autoRefresh:false });
+export const DEFAULT_PREFS = Object.freeze({ timezone:'Asia/Ho_Chi_Minh', travelMinutes:15, dueSoonHours:72, clusterDays:3, clusterCount:3, view:'week', showCompleted:false, collapsed:false, courseFilter:'',autoRefresh:false,weekOneDate:'' });
 export const KINDS = new Set(['class','exam','assignment','project','annotation','course','event','office_hours','semester_plan']);
 export const PRIORITIES = ['low','normal','high'];
 export const PREPARATION = ['not_started','preparing','ready'];
@@ -22,7 +22,8 @@ export function safeLink(value) {
 }
 export function preferences(value={}) {
   const p={...DEFAULT_PREFS,...value}; if(!validZone(p.timezone)) throw new Error('Choose a valid IANA timezone.');
-  return { autoRefresh:Boolean(p.autoRefresh),timezone:p.timezone, travelMinutes:integer(p.travelMinutes,0,180), dueSoonHours:integer(p.dueSoonHours,1,336), clusterDays:integer(p.clusterDays,1,14), clusterCount:integer(p.clusterCount,2,20),view:choice(p.view,['day','week','month','exams','deadlines','overview'],'week'),showCompleted:Boolean(p.showCompleted),collapsed:Boolean(p.collapsed),courseFilter:text(p.courseFilter??'',100) };
+  if(p.weekOneDate&&(!validDate(p.weekOneDate)||weekday(p.weekOneDate)!==1))throw new Error('Teaching week 1 must start on a Monday.');
+  return { autoRefresh:Boolean(p.autoRefresh),weekOneDate:p.weekOneDate||'',timezone:p.timezone, travelMinutes:integer(p.travelMinutes,0,180), dueSoonHours:integer(p.dueSoonHours,1,336), clusterDays:integer(p.clusterDays,1,14), clusterCount:integer(p.clusterCount,2,20),view:choice(p.view,['day','week','month','exams','deadlines','overview'],'week'),showCompleted:Boolean(p.showCompleted),collapsed:Boolean(p.collapsed),courseFilter:text(p.courseFilter??'',100) };
 }
 export function validateRecord(input) {
   if(!validScope(input?.scope)||!KINDS.has(input.kind)) throw new Error('Unsupported academic account or record type.');
